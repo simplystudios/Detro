@@ -571,38 +571,6 @@ if (!found) {
 </main>
 <div style="z-index: 950;">
 
-    <Button
-	on:click={() => getUserLocation()}
-    variant="unelevated"
-    color="secondary"
-    style="width:100%; background-color: #c0282c;"
-  >
-    <Label>Nearest Metro Station</Label>
-  </Button>
-
-  <div>
-    {#if ifstationfound == true}
-    <Card>
-      <Label>Your Nearest Station is {nearestStation.stop_name}</Label>
-      <Label>Station Line: {nearestStation.Line}</Label>
-      <Label>Opened in : {nearestStation.stop_date}</Label>
-      <Label>Station Layout : {nearestStation.stop_layout}</Label>
-
-      <Button
-	on:click={() => openuberlink()}
-    variant="unelevated"
-    color="secondary"
-    style="width:100%; background-color: #000000;"
-  >
-    <Label>Get a Uber To {nearestStation.stop_name} Station</Label>
-  </Button>
-
-    </Card>
-    {/if}
-    
-  
-  </div>
-
 	<div style="background-color: #c0282c;">
 	<h1 style="color:white; font-weight:400; padding:10px; text-align: center; font-size: large;">Plan Your Journey</h1>
 </div>
@@ -704,6 +672,41 @@ if (!found) {
   </Button>
     </div>
 {/if}
+
+<br>
+ <Button
+	on:click={() => getUserLocation()}
+    variant="unelevated"
+    color="secondary"
+    style="width:100%; background-color: #c0282c;"
+  >
+    <Label>Get Nearest Metro Station</Label>
+  </Button>
+
+  <div>
+    {#if ifstationfound == true}
+    <Card style="padding:10px;">
+      <h2 style="text-align: center;">Your Nearest Station is {nearestStation.stop_name}</h2>
+      <Label>Station Line: {nearestStation.Line}</Label>
+      <Label>Opened in : {nearestStation.stop_date}</Label>
+      <Label>Station Layout : {nearestStation.stop_layout}</Label>
+      <br>
+
+      <Button
+	on:click={() => openuberlink()}
+    variant="unelevated"
+    color="secondary"
+    style="width:100%; background-color: #000000;"
+  >
+    <Label>Book a Uber To {nearestStation.stop_name}</Label>
+  </Button>
+
+    </Card>
+    {/if}
+    
+  
+  </div>
+
 </div>
 <div style="display: flex; padding:10px; border:1px; border-radius: 10px; background-color: #F5F7FA; margin-top:10px; height:100px; overflow:hidden; align-items: center;">
   <h1 style="font-size:x-large;">Lines</h1>
@@ -712,8 +715,8 @@ if (!found) {
 
 <div id="lines">
   {#each lines as ld}
-    <div style={`display:flex; border:1.5px; border-style: solid; border-color:${ld.stroke}; border-radius: 6px; text-align: center; background-color:#F5F7FA; padding-left:0px; margin:10px;`}>
-      <div style = {`background-color: ${ld.stroke}; width:2.5%; margin-right:5px; border:1; border-radius:3px`};></div>
+    <div style={`display:flex; border:1px; border-style: solid; border-color:grey; border-radius: 6px; text-align: center; background-color:#F5F7FA; padding-left:0px; margin:10px;`}>
+      <div style = {`background-color: ${ld.stroke}; width:3%; margin-right:5px; border:1; border-radius:5px`};></div>
       <div style="display: block;">
         <div style="display: flex;">
           <h2 style="margin-top:10px; margin-left: 10px; margin-right:0px margin-bottom: 5px;">{ld.name} - </h2>
