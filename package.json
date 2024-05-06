@@ -1,0 +1,34 @@
+{
+	"name": "map",
+	"version": "0.0.1",
+	"private": true,
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview"
+	},
+	"devDependencies": {
+		"@mdi/js": "^7.4.47",
+		"@smui-extra/autocomplete": "^7.0.0-beta.18",
+		"@smui/button": "^7.0.0-beta.18",
+		"@smui/card": "^7.0.0-beta.18",
+		"@smui/common": "^7.0.0-beta.18",
+		"@smui/icon-button": "^7.0.0-beta.18",
+		"@smui/snackbar": "^7.0.0-beta.18",
+		"@smui/textfield": "^7.0.0-beta.18",
+		"@sveltejs/adapter-auto": "^3.0.0",
+		"@sveltejs/kit": "^2.0.0",
+		"@sveltejs/vite-plugin-svelte": "^3.0.0",
+		"leaflet": "^1.9.4",
+		"smui-theme": "^7.0.0-beta.18",
+		"svelte": "^4.2.7",
+		"svelte-ionicons": "^1.1.2",
+		"vite": "^5.0.3"
+	},
+	"type": "module",
+	"dependencies": {
+		"file-saver": "^2.0.5",
+		"html2canvas": "^1.4.1",
+		"svelte-material-ui": "^7.0.0-beta.18"
+	}
+}

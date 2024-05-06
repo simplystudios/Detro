@@ -1,0 +1,81 @@
+[
+    {
+        "name": "Yellow Line",
+        "region":"Delhi",
+        "stroke": "#ffff00",
+        "stations": 37,
+        "length": 49.02
+    },
+    {
+        "name": "Violet Line",
+        "region":"Delhi",
+        "stroke": "#ee82ee",
+        "stations": 34,
+        "length": 46.34 
+    },
+    {
+        "name": "Red Line",
+        "region":"Delhi",
+        "stroke": "#ff0000",
+        "stations": 29,
+        "length": 34.55
+    },
+    {
+        "name": "Gray Line",
+        "region":"Delhi",
+        "stroke": "#838996",
+        "stations": 2,
+        "length": 34.55
+    },
+    {
+        "name": "Rapid Metro Line",
+        "region":"Gurgaon",
+        "stroke": "#801b80",
+        "stations": 11,
+        "length": 12.85
+    },
+    {
+        "name": "Pink Line",
+        "region":"Delhi",
+        "stroke": "#ffc0cb",
+        "stations": 38,
+        "length": 59.24
+    },
+    {
+        "name": "Magenta Line",
+        "region":"Delhi",
+        "stroke": "#ff00ff",
+        "stations": 25,
+        "length": 37.46
+    },
+    {
+        "name": "Green Line",
+        "region":"Delhi",
+        "stroke": "#00ff00",
+        "stations": 24,
+        "length": 28.79
+    },
+    {
+        "name": "Blue Line",
+        "region":"Delhi",
+        "stroke": "#0000ff",
+        "stations": 58,
+        "length": 55.56
+    },
+    {
+        "name": "Orange Line",
+        "region":"Delhi Airport Line",
+        "description": "Orange Line",
+        "stroke": "#ff7f00",
+        "stations": 7,
+        "length": 22.7
+    },
+    {
+        "name": "Aqua Line (Noida)",
+        "region":"Noida (NMRC)",
+        "description": "Aqua Line",
+        "stroke": " #00FFFF",
+        "stations": 21,
+        "length": 29.7
+    }
+] 
