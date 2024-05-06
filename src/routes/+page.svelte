@@ -390,23 +390,40 @@ function findNearestMetroStation(userLat, userLon, stationList) {
 }
 
   let ifstationfound = false;
-  if (nearestStation) {
-  // Access properties of nearestStation here
-  console.log("Nearest metro station:", nearestStation.stop_name);
-} else {
-  console.log("Nearest metro station not found.");
-}
 
-
+ 
 
         function showPosition(position) {
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(showPosition, function(error) {
+              switch(error.code) {
+              case error.PERMISSION_DENIED:
+                alert("User denied the request for Geolocation.");
+                break;
+              }
+              });
+              } else {
+              alert("Geolocation is not supported by this browser.");
+              }
             latitude = position.coords.latitude;
             longitude = position.coords.longitude;
+            console.log(latitude,longitude)
             nearestStation, minDistance = findNearestMetroStation(latitude, longitude, data);
+            if (nearestStation) {
+              // Access properties of nearestStation here
+              console.log("Nearest metro station:", nearestStation.stop_id);
+            } else {
+              console.log("Nearest metro station not found.");
+              alert("we are unable to get your location or having some issues...")
+            }
             }
 
         function openuberlink(){
           generateUberDeepLink(nearestStation.stop_lat,nearestStation.stop_lon)
+        }
+
+        function googlemapslink(lat,lon){
+          window.open(`https://www.google.com/maps?saddr=My+Location&daddr=${nearestStation.stop_name} metro station`);
         }
 
         function generateUberDeepLink(lat,lon) {
@@ -427,6 +444,8 @@ function findNearestMetroStation(userLat, userLon, stationList) {
     lines = linedata;
     console.log(linedata);
 
+
+    console.log(nearestStation)
 	})
 
 
@@ -698,7 +717,18 @@ if (!found) {
     color="secondary"
     style="width:100%; background-color: #000000;"
   >
+    <img src="/uberlogo.png" alt="" width="40px" style="margin-right: 5px;">
     <Label>Book a Uber To {nearestStation.stop_name}</Label>
+  </Button>
+  <br>
+  <Button
+	on:click={() => googlemapslink()}
+    variant="unelevated"
+    color="secondary"
+    style="width:100%; background-color: #ebf1f0;padding=10px;"
+  >
+    <img src="/maps.png" alt="" width="20px">
+    <Label style="color:black; margin-left: 5px;">Find Route On Google Maps</Label>
   </Button>
 
     </Card>
