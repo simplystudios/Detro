@@ -35,7 +35,7 @@
     //     navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
     // }
 
-            metrodata = await fetch('/metrodata2.json')
+            metrodata = await fetch('/stationsdata.json')
             metrodata = await metrodata.json()
             console.log(metrodata);
             const leaflet = await import('leaflet');
