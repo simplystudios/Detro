@@ -717,8 +717,8 @@ if (!found) {
     color="secondary"
     style="width:100%; background-color: #000000;"
   >
-    <img src="/uberlogo.png" alt="" width="40px" style="margin-right: 5px;">
-    <Label>Book a Uber</Label>
+    <Label>Book a </Label>
+    <img src="/uberlogo.png" alt="" width="40px" style="margin-left: 5px;">
   </Button>
   <br>
   <Button
