@@ -43,7 +43,7 @@
             map = leaflet.map(mapElement).setView([22, 23], 13);
 
 
-             var Stadia_AlidadeSmooth = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.{ext}', {
+             var Stadia_AlidadeSmooth = L.tileLayer('https://tiles-eu.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png', {
 	minZoom: 0,
 	maxZoom: 20,
 	attribution: '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a>  &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
