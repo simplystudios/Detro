@@ -291,63 +291,65 @@
 "GNIDA Office",
 "Depot Station"
 ]
-  let fromd;
-  let routecss = "display:block"
-  let routenofoundcss = "display:none"
-  let linefrom;
-  let ballstationcssto
-  let ballstationcssfrom
-  let toconnection;
-  let fromconnection;
-  let lineto;
-  let frome;
-  let latitude;
-  let longitude;
-  let tod;
-  let toe;
-	export let to = ""
-	export let from = ""
-  let lines = [];
-  let linedata;
-	let metrod;
-  let distancebw;
-  let i = -1;
-	let textOutlined= ''
-	let data = [];
-  let distance = "Search to get the distance...";
-	let snackbarWithoutClose= Snackbar;
-  let route = [];
 
-    // Function to find route
-    function listStationsOnRoute(route) {
-        const stationList = route.map(station => station.stop_name);
-        return stationList;
-    }
+let fromd;
+let routecss = "display:block";
+let routenofoundcss = "display:none";
+let linefrom;
+let ballstationcssto;
+let ballstationcssfrom;
+let toconnection;
+let fromconnection;
+let lineto;
+let frome;
+let latitude;
+let longitude;
+let tod;
+let toe;
+export let to = "";
+export let from = "";
+let lines = [];
+let linedata;
+let metrod;
+let distancebw;
+let i = -1;
+let textOutlined = '';
+let data = [];
+let distance = "Search to get the distance...";
+let snackbarWithoutClose = Snackbar;
+let route = [];
+let ifstationfound = false;
+let nearestStation;
+let minDistance;
 
-    // Function to visualize route with all stations
-    function visualizeRoute(route) {
-        let routeString = "Route:\n";
-        route.forEach((station, index) => {
-            if (index !== route.length - 1) {
-                routeString += station + " -> ";
-            } else {
-                routeString += station;
-            }
-        });
-        return routeString;
-    }
+function listStationsOnRoute(route) {
+    const stationList = route.map(station => station.stop_name);
+    return stationList;
+}
 
-
-
-    function getUserLocation() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(showPosition);
-            } else {
-                alert("Geolocation is not supported by this browser.");
-            }
+function visualizeRoute(route) {
+    let routeString = "Route:\n";
+    route.forEach((station, index) => {
+        if (index !== route.length - 1) {
+            routeString += station + " -> ";
+        } else {
+            routeString += station;
         }
+    });
+    return routeString;
+}
 
-        function haversine(lat1, lon1, lat2, lon2) {
+function getUserLocation() {
+    console.log("Getting user location...");
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showPosition, showError);
+    } else {
+        alert("Geolocation is not supported by this browser.");
+        console.log("Geolocation not supported by browser.");
+    }
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
     const toRad = (value) => (value * Math.PI) / 180;
     const R = 6371; // Radius of the Earth in kilometers
 
@@ -362,95 +364,99 @@
     const distance = R * c;
 
     return distance; // Distance in kilometers
-  }
-
-  // Function to find the nearest metro station
- 
-let nearestStation;
-let minDistance;
-
-function findNearestMetroStation(userLat, userLon, stationList) {
-  nearestStation = null;
-  minDistance = Infinity;
-
-  stationList.forEach(station => {
-    const stationLat = parseFloat(station.stop_lat);
-    const stationLon = parseFloat(station.stop_lon);
-    const distance = haversine(userLat, userLon, stationLat, stationLon);
-    console.log(`Station: ${station.stop_name}, Distance: ${distance}`);
-    if (distance < minDistance) {
-      minDistance = distance;
-      nearestStation = station;
-    }
-  });
-
-  console.log("Nearest station:", nearestStation, "distance:", minDistance);
-  ifstationfound = true;
-  return { nearestStation, minDistance };
 }
 
-  let ifstationfound = false;
+function findNearestMetroStation(userLat, userLon, stationList) {
+    nearestStation = null;
+    minDistance = Infinity;
 
- 
-
-        function showPosition(position) {
-            if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(showPosition, function(error) {
-              switch(error.code) {
-              case error.PERMISSION_DENIED:
-                alert("User denied the request for Geolocation.");
-                break;
-              }
-              });
-              } else {
-              alert("Geolocation is not supported by this browser.");
-              }
-            latitude = position.coords.latitude;
-            longitude = position.coords.longitude;
-            console.log(latitude,longitude)
-            nearestStation, minDistance = findNearestMetroStation(latitude, longitude, data);
-            if (nearestStation) {
-              // Access properties of nearestStation here
-              console.log("Nearest metro station:", nearestStation.stop_id);
-            } else {
-              console.log("Nearest metro station not found.");
-              alert("we are unable to get your location or having some issues...")
-            }
-            }
-
-        function openuberlink(){
-          generateUberDeepLink(nearestStation.stop_lat,nearestStation.stop_lon)
+    stationList.forEach(station => {
+        const stationLat = parseFloat(station.stop_lat);
+        const stationLon = parseFloat(station.stop_lon);
+        const distance = haversine(userLat, userLon, stationLat, stationLon);
+        console.log(`Station: ${station.stop_name}, Distance: ${distance}`);
+        if (distance < minDistance) {
+            minDistance = distance;
+            nearestStation = station;
         }
+    });
 
-        function googlemapslink(lat,lon){
-          window.open(`https://www.google.com/maps?saddr=My+Location&daddr=${nearestStation.stop_name} metro station`);
-        }
+    console.log("Nearest station:", nearestStation, "distance:", minDistance);
+    ifstationfound = true;
+    return { nearestStation, minDistance };
+}
 
-        function generateUberDeepLink(lat,lon) {
-            console.log("Nearest station:", nearestStation.stop_name);
-            console.log(`https://m.uber.com/ul/?action=setPickup&pickup[latitude]=${latitude}&pickup[longitude]=${longitude}&dropoff[latitude]=${lat}&dropoff[longitude]=${lon}`)
-            window.open(`https://m.uber.com/ul/?action=setPickup&pickup[latitude]=${latitude}&pickup[longitude]=${longitude}&dropoff[latitude]=${lat}&dropoff[longitude]=${lon}`)
-      }
+function showPosition(position) {
+    latitude = position.coords.latitude;
+    longitude = position.coords.longitude;
+    console.log("User position:", latitude, longitude);
+    const result = findNearestMetroStation(latitude, longitude, data);
+    nearestStation = result.nearestStation;
+    minDistance = result.minDistance;
+    if (nearestStation) {
+        console.log("Nearest metro station:", nearestStation.stop_id);
+    } else {
+        console.log("Nearest metro station not found.");
+        alert("We are unable to get your location or having some issues...");
+    }
+}
+
+function showError(error) {
+    console.log("Geolocation error code:", error.code);
+    switch(error.code) {
+        case error.PERMISSION_DENIED:
+            alert("User denied the request for Geolocation.");
+            console.log("User denied the request for Geolocation.");
+            break;
+        case error.POSITION_UNAVAILABLE:
+            alert("Location information is unavailable.");
+            console.log("Location information is unavailable.");
+            break;
+        case error.TIMEOUT:
+            alert("The request to get user location timed out.");
+            console.log("The request to get user location timed out.");
+            break;
+        case error.UNKNOWN_ERROR:
+            alert("An unknown error occurred.");
+            console.log("An unknown error occurred.");
+            break;
+    }
+}
+
+function openuberlink() {
+    generateUberDeepLink(nearestStation.stop_lat, nearestStation.stop_lon);
+}
+
+function googlemapslink() {
+    window.open(`https://www.google.com/maps?saddr=My+Location&daddr=${nearestStation.stop_name} metro station`);
+}
+
+function generateUberDeepLink(lat, lon) {
+    console.log("Nearest station:", nearestStation.stop_name);
+    console.log(`https://m.uber.com/ul/?action=setPickup&pickup[latitude]=${latitude}&pickup[longitude]=${longitude}&dropoff[latitude]=${lat}&dropoff[longitude]=${lon}`);
+    window.open(`https://m.uber.com/ul/?action=setPickup&pickup[latitude]=${latitude}&pickup[longitude]=${longitude}&dropoff[latitude]=${lat}&dropoff[longitude]=${lon}`);
+}
 
 
-	onMount(async () => {
+onMount(async () => {
+    try {
+        metrod = await fetch("/stationsdata.json");
+        if (!metrod.ok) throw new Error("Failed to fetch station data");
+        data = await metrod.json();
+        console.log("Station data:", data);
 
-		metrod = await fetch("/stationsdata.json")
-		data = await metrod.json()
-		console.log(data)
+        getUserLocation();
 
-    linedata = await fetch("/lines.json");
-    linedata = await linedata.json();
-    lines = linedata;
-    console.log(linedata);
+        linedata = await fetch("/lines.json");
+        if (!linedata.ok) throw new Error("Failed to fetch line data");
+        linedata = await linedata.json();
+        lines = linedata;
+        console.log("Line data:", linedata);
+    } catch (error) {
+        console.error("Error fetching data:", error);
+    }
+});
 
-
-    console.log(nearestStation)
-	})
-
-
-  
-// Function to find route
 function organizeStations(stationsData) {
     const stationsByLine = {};
 
@@ -465,105 +471,83 @@ function organizeStations(stationsData) {
     return stationsByLine;
 }
 
-// Function to find route
 function findRoute(startStation, endStation, stationsByLine) {
-        for (const line in stationsByLine) {
-            const stationsOnLine = stationsByLine[line];
-            const startIndex = stationsOnLine.findIndex(station => station.stop_name === startStation);
-            const endIndex = stationsOnLine.findIndex(station => station.stop_name === endStation);
+    for (const line in stationsByLine) {
+        const stationsOnLine = stationsByLine[line];
+        const startIndex = stationsOnLine.findIndex(station => station.stop_name === startStation);
+        const endIndex = stationsOnLine.findIndex(station => station.stop_name === endStation);
 
-            if (startIndex !== -1 && endIndex !== -1) {
-                // Ensure start station comes before end station
-                const route = startIndex < endIndex ? stationsOnLine.slice(startIndex, endIndex + 1) : stationsOnLine.slice(endIndex, startIndex + 1).reverse();
-                return route.map(station => station.stop_name);
-            }
+        if (startIndex !== -1 && endIndex !== -1) {
+            const route = startIndex < endIndex ? stationsOnLine.slice(startIndex, endIndex + 1) : stationsOnLine.slice(endIndex, startIndex + 1).reverse();
+            return route.map(station => station.stop_name);
         }
-        return null; // No route found
     }
+    return null; // No route found
+}
 
-// Function to visualize route with all stations
-
-
-// Example usage
-
-
-
-
-let distancebwstations = () =>{
-  let found = false;
+let distancebwstations = () => {
+    let found = false;
     const stationsByLine = organizeStations(data);
     console.log(stationsByLine);
 
     route = findRoute(from, to, stationsByLine);
 
     if (route) {
-        routenofoundcss= "display:none"
-        routecss = "display: block"
+        routenofoundcss = "display:none";
+        routecss = "display:block";
         console.log("Route found:", route);
         route.map(station => console.log(station));
         listStationsOnRoute(route);
     } else {
-        routenofoundcss= "display:block"
-        routecss = "display: none"
+        routenofoundcss = "display:block";
+        routecss = "display:none";
         route = stations;
+    }
 
+    for (let station in data) {
+        if (data[station].stop_name === from) {
+            fromd = data[station].distance;
+            linefrom = data[station].Line;
+            console.log("From distance:", fromd);
+            for (let o = 0; o < lines.length; o++) {
+                if (lines[o].name.toLowerCase() === linefrom.toLowerCase()) {
+                    console.log("Line stroke color:", lines[o].stroke);
+                    ballstationcssfrom = `background-color: ${lines[o].stroke}; border: 1px; width: 10px; height: 10px; border-radius: 90%; margin-top: 22px; margin-right: 10px;`;
+                    break;
+                }
+            }
+            frome = data[station].stop_layout;
+            fromconnection = data[station].connection;
+            found = true;
+            break;
+        }
     }
-for (let station in data) {
-    if (data[station].stop_name === from) {
-        fromd = data[station].distance;
-        linefrom = data[station].Line
-        console.log(fromd)
-        for (let o = 0; o < lines.length; o++) {
-      if (lines[o].name.toLowerCase() === linefrom.toLowerCase()) { // Convert to lowercase for case-insensitive comparison
-        console.log(lines[o].stroke);
-        ballstationcssfrom = `background-color: ${lines[o].stroke}; border: 1px; width: 10px; height: 10px; border-radius: 90%; margin-top: 22px; margin-right: 10px;`;
-        break; // Exit the loop once a match is found
-      }
-    }
-        frome = data[station].stop_layout; // Corrected typo
-        fromconnection = data[station].connection
-        found = true;
-        break; // Exit loop after finding the station
-    }
-}
 
-if (!found) {
-    console.log("Station not found!");
-}
-   for (let p in data){
-    if (data[p].stop_name === to){
-      tod = data[p].distance
-      lineto = data[p].Line
-      for (let i = 0; i < lines.length; i++) {
-      if (lines[i].name.toLowerCase() === lineto.toLowerCase()) { // Convert to lowercase for case-insensitive comparison
-        console.log(lines[i].stroke);
-        ballstationcssto = `background-color: ${lines[i].stroke}; border: 1px; width: 10px; height: 10px; border-radius: 90%; margin-top: 22px; margin-right: 10px;`;
-        break; // Exit the loop once a match is found
-      }
+    if (!found) {
+        console.log("Station not found!");
     }
-      toe = data[p].stop_layout
-      toconnection = data[p].connection;
-      if(tod==null){
-        distance = "Cannot be determind as we cant get the station info"
-      }
-      else{
-        console.log(tod)
-      }
-    }
-   }
-   let d = fromd - tod;
-   distancebw = d.toFixed(0);
-   if(Math.sign(d) == -1){
-    distancebw = -(distancebw)
-   }
-   else{
-    
-   }
-   distance = "The Distance Between " + from +" and "+ to + " is " + distancebw ;
-   console.log(d);
-   console.log(distance);
 
-}
+    for (let p in data) {
+        if (data[p].stop_name === to) {
+            tod = data[p].distance;
+            lineto = data[p].Line;
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].name.toLowerCase() === lineto.toLowerCase()) {
+                    console.log("Line stroke color:", lines[i].stroke);
+                    ballstationcssto = `background-color: ${lines[i].stroke}; border: 1px; width: 10px; height: 10px; border-radius: 90%; margin-top: 22px; margin-right: 10px;`;
+                    break;
+                }
+            }
+            toe = data[p].stop_layout;
+            toconnection = data[p].connection;
+            break;
+        }
+    }
+
+    distance = Math.abs(tod - fromd).toFixed(2) + " KM";
+    console.log("Distance between stations:", distance);
+};
+
 
 </script>
 
@@ -588,11 +572,55 @@ if (!found) {
 		<LeafletMap style="z-index: 900;"/>
 	</div>
 </main>
-<div style="z-index: 950;">
+<div style="background-color: black; box-shadow: 0px 3px 2px #727272;">
+	<h1 style="color:white; font-weight:400; text-align: center; padding:10px; font-size: large;">Nearest Station</h1>
+</div>
+ {#if ifstationfound == true}
+  <Card style="padding:10px;">
+      <h2 style="text-align: center;">Your Nearest Station is {nearestStation.stop_name}</h2>
+      <div style="display: flex; justify-content:center; align-items:center;">
+        <div>
+          <div style="display: flex; padding:5px;">
+        <img src="/linesiconred.png" alt="" width="25px" height="25px">
+        <Label>Station Line: {nearestStation.Line}</Label>
+      </div>
+        <div style="display: flex; padding:5px;">
+          <img src="/undergroundicon.png" alt="" width="25px" height="25px">
+          <Label>Station Layout : {nearestStation.stop_layout}</Label>
+      </div>
+        </div>
+      <div>
+        <div style="display: flex; padding:5px;">
+           <Label>Connetion : {nearestStation.connection}</Label>
+        </div>
+      </div>
+      </div>
+  <br>
+  <div style="display: flex; justify-content:center; align-items:center">
+      <Button
+	on:click={() => googlemapslink()}
+    variant="unelevated"
+    color="secondary"
+    style="width:100%; background-color: #1574EA;padding=10px;"
+  >
+    <img src="/dir.png" alt="" width="20px">
+    <h2 style="color:white; margin-left: 5px; font-weight: 400;">Get Directions</h2>
+  </Button>
+  </div>
 
-	<div style="background-color: #c0282c;">
+    </Card>
+    {:else}
+      <h1>Cannot Access Location</h1>
+{/if}
+
+
+<br>
+
+<div style="border:1px; border-radius:2px; background-color: #c0282c; margin-top:-5px; box-shadow: 0px 3px 2px #727272;">
 	<h1 style="color:white; font-weight:400; padding:10px; text-align: center; font-size: large;">Plan Your Journey</h1>
 </div>
+<Card>
+  <div class="dres" style="z-index: 950; padding:5px; border:1px; border-radius:5px; ">
 <br>
 <div class="pickers">
 	 <div style="margin-right: 10px;">
@@ -615,18 +643,20 @@ if (!found) {
 	 </div>
 </div>
 <br>
-<div style="display: flex; justify-content: center; margin:10px;">
+<div style="display: flex; justify-content: center;  margin:10px;">
 	<Button
 	on:click={() => distancebwstations()}
     variant="unelevated"
     color="secondary"
-    style="width:35%; background-color: #c0282c;"
+    style="width:70%; background-color: #c0282c;"
   >
-    <Label style="color:white;">Search</Label>
+    <Label style="color:white;">New Ride</Label>
   </Button>
   <br>
   </div>
 </div>
+</Card>
+
 {#if frome && toe !== "undefined"}
 <div id="capture">
   <div class="card-container">
@@ -687,65 +717,29 @@ if (!found) {
     color="secondary"
     style="width:35%; background-color: #c0282c;"
   >
-    <Label style="color:white;">Save Route</Label>
+    <Label style="color:white;">Screenshot Route</Label>
   </Button>
     </div>
 {/if}
 
 <br>
- <Button
-	on:click={() => getUserLocation()}
-    variant="unelevated"
-    color="secondary"
-    style="width:100%; background-color: #c0282c;"
-  >
-    <Label>Get Nearest Metro Station</Label>
-  </Button>
 
-  <div>
-    {#if ifstationfound == true}
-    <Card style="padding:10px;">
-      <h2 style="text-align: center;">Your Nearest Station is {nearestStation.stop_name}</h2>
-      <Label>Station Line: {nearestStation.Line}</Label>
-      <Label>Opened in : {nearestStation.stop_date}</Label>
-      <Label>Station Layout : {nearestStation.stop_layout}</Label>
-      <br>
-
-      <Button
-	on:click={() => openuberlink()}
-    variant="unelevated"
-    color="secondary"
-    style="width:100%; background-color: #000000;"
-  >
-    <Label>Book a </Label>
-    <img src="/uberlogo.png" alt="" width="40px" style="margin-left: 5px;">
-  </Button>
-  <br>
-  <Button
-	on:click={() => googlemapslink()}
-    variant="unelevated"
-    color="secondary"
-    style="width:100%; background-color: #ebf1f0;padding=10px;"
-  >
-    <img src="/maps.png" alt="" width="20px">
-    <Label style="color:black; margin-left: 5px;">Find Route On Google Maps</Label>
-  </Button>
-
-    </Card>
-    {/if}
-    
-  
-  </div>
+<div>
 
 </div>
-<div style="display: flex; padding:10px; border:1px; border-radius: 10px; background-color: #F5F7FA; margin-top:10px; height:100px; overflow:hidden; align-items: center;">
+
+
+  
+
+</div>
+<div style="display: flex; padding:10px; border:1px; border-radius: 10px; background-color: #ffffff;box-shadow: 0px 2px 2px #727272; margin-top:10px; height:100px; overflow:hidden; align-items: center;">
   <h1 style="font-size:x-large;">Lines</h1>
   <img class="linesimg" src="/linesiconred.png" alt="">
 </div>
 
-<div id="lines">
+<div class="lines" id="lines">
   {#each lines as ld}
-    <div style={`display:flex; border:1px; border-style: solid; border-color:grey; border-radius: 6px; text-align: center; background-color:#F5F7FA; padding-left:0px; margin:10px;`}>
+    <div style={`display:flex; text-align: center; background-color:#ffffff; border:1; border-radius:5px; padding-left:0px; margin:10px;`}>
       <div style = {`background-color: ${ld.stroke}; width:3%; margin-right:5px; border:1; border-radius:5px`};></div>
       <div style="display: block;">
         <div style="display: flex;">
@@ -805,6 +799,9 @@ if (!found) {
   }
   .stationav{
 
+  }
+  .lines{
+        padding: 10px;
   }
   .timeline{
     list-style: none;
