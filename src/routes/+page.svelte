@@ -299,6 +299,7 @@ let linefrom;
 let ballstationcssto;
 let ballstationcssfrom;
 let toconnection;
+let nearyear;
 let fromconnection;
 let lineto;
 let frome;
@@ -344,7 +345,6 @@ function getUserLocation() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(showPosition, showError);
     } else {
-        alert("Geolocation is not supported by this browser.");
         console.log("Geolocation not supported by browser.");
     }
 }
@@ -378,6 +378,9 @@ function findNearestMetroStation(userLat, userLon, stationList) {
         if (distance < minDistance) {
             minDistance = distance;
             nearestStation = station;
+            let date = nearestStation.stop_date;
+            nearyear = date.split("-")[0];
+            console.log(nearyear);  // Output: 2002
         }
     });
 
@@ -405,7 +408,6 @@ function showError(error) {
     console.log("Geolocation error code:", error.code);
     switch(error.code) {
         case error.PERMISSION_DENIED:
-            alert("User denied the request for Geolocation.");
             console.log("User denied the request for Geolocation.");
             break;
         case error.POSITION_UNAVAILABLE:
@@ -577,7 +579,7 @@ let distancebwstations = () => {
 </div>
  {#if ifstationfound == true}
   <Card style="padding:10px;">
-      <h2 style="text-align: center;">Your Nearest Station is {nearestStation.stop_name}</h2>
+      <h2 style="text-align: center;">{nearestStation.stop_name}</h2>
       <div style="display: flex; justify-content:center; align-items:center;">
         <div>
           <div style="display: flex; padding:5px;">
@@ -591,7 +593,7 @@ let distancebwstations = () => {
         </div>
       <div>
         <div style="display: flex; padding:5px;">
-           <Label>Connetion : {nearestStation.connection}</Label>
+           <Label>Opened In : {nearyear}</Label>
         </div>
       </div>
       </div>
@@ -610,7 +612,10 @@ let distancebwstations = () => {
 
     </Card>
     {:else}
-      <h1>Cannot Access Location</h1>
+    <Card style="display:flex; justify-content:center; align-items:center;">
+      <img width="200px" height="200px" src="/noloc.svg" alt="">
+      <h1>Cannot Access Your Location</h1>
+    </Card>
 {/if}
 
 
