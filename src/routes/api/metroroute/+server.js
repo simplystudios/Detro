@@ -8,6 +8,7 @@ const dataPath = path.join(process.cwd(), "static", "metrolines.json");
 const lines = JSON.parse(fs.readFileSync(dataPath, "utf-8"));
 
 /* ---------- GRAPH ---------- */
+console.log("hello world");
 
 function buildGraph(lines) {
   const g = {};
