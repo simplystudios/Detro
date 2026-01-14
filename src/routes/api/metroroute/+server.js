@@ -4,7 +4,7 @@ import path from "path";
 
 /* ---------- LOAD DATA ---------- */
 
-const res = await fetch("/metrolines.json");
+const res = await fetch("https://detroweb.vercel.app/metrolines.json");
 const lines = await res.json();
 
 /* ---------- GRAPH ---------- */
