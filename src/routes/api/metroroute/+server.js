@@ -4,7 +4,7 @@ import path from "path";
 
 /* ---------- LOAD DATA ---------- */
 
-const dataPath = path.join(process.cwd(), "static", "metrolines.json");
+const dataPath = "/metrolines.json";
 const lines = JSON.parse(fs.readFileSync(dataPath, "utf-8"));
 
 /* ---------- GRAPH ---------- */
