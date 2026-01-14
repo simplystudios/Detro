@@ -4,8 +4,8 @@ import path from "path";
 
 /* ---------- LOAD DATA ---------- */
 
-const dataPath = "/metrolines.json";
-const lines = JSON.parse(fs.readFileSync(dataPath, "utf-8"));
+const res = await fetch("/metrolines.json");
+const lines = await res.json();
 
 /* ---------- GRAPH ---------- */
 console.log("hello world");
