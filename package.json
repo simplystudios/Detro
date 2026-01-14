@@ -28,7 +28,11 @@
 	"type": "module",
 	"dependencies": {
 		"file-saver": "^2.0.5",
+		"gtfs-utils": "^5.1.0",
 		"html2canvas": "^1.4.1",
-		"svelte-material-ui": "^7.0.0-beta.18"
+		"lodash-es": "^4.17.22",
+		"lucide-svelte": "^0.475.0",
+		"svelte-material-ui": "^7.0.0-beta.18",
+		"transitive-js": "^0.14.1"
 	}
 }

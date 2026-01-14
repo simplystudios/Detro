@@ -1,133 +1,134 @@
 <script>
-    import { onMount, onDestroy } from 'svelte';
-    import { browser } from '$app/environment';
-    import { writable } from 'svelte/store';
+    import { onMount, onDestroy } from "svelte";
+    import { browser } from "$app/environment";
+    import { toValue, fromValue } from "$lib/store.js";
 
     let mapElement;
     let map;
-    let to;
-    let from;
-    let lat;
-    let long;
-    let data;
-    let props;
-    export const jsonTree = {};
+  
     let metrodata;
     let markers = []; // Array to store markers
+    export const jsonTree = {};
+
+    function updateto(val) {
+        toValue.set(val);
+    }
+
+    function updatefrom(val) {
+        fromValue.set(val);
+    }
 
     onMount(async () => {
-
-         if (browser) {
-
-    //          if (typeof window !== 'undefined') {
-    //     const successCallback = (position) => {
-    //         console.log(position);
-    //         data = position.coords;
-    //         lat = data.latitude;
-    //         long = data.longitude;
-    //         console.log(lat, long);
-    //     };
-
-    //     const errorCallback = (error) => {
-    //         console.log(error);
-    //     };
-
-    //     navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
-    // }
-
-            metrodata = await fetch('/stationsdata.json')
-            metrodata = await metrodata.json()
+        if (browser) {
+            // Fetch metrodata
+            metrodata = await fetch("/stationsdata.json");
+            metrodata = await metrodata.json();
             console.log(metrodata);
-            const leaflet = await import('leaflet');
 
-            map = leaflet.map(mapElement).setView([22, 23], 13);
+            // Dynamically import Leaflet
+            const leaflet = await import("leaflet");
 
+            // Initialize the map using the leaflet variable (not L)
+            map = leaflet.map(mapElement).setView([28.6139, 77.209], 11);
 
-             var tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-	attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-	minZoom: 0,
-	maxZoom: 20,
-    token: "07fc4acf-0c71-4dda-aa8a-90fe9fa064b9",
-	ext: 'png'
-}).addTo(map)
-            
-            function style(feature) {
-    return {
-        color: feature.properties.stroke || 'yellow', // Default color if stroke color not provided
-        fillColor: feature.properties.fill || 'yellow', // Default color if fill color not provided
-        opacity: feature.properties.strokeOpacity || 1.0, // Default opacity if stroke opacity not provided
-        fillOpacity: feature.properties.fillOpacity || 0.5 // Default opacity if fill opacity not provided
-    };
-}
+            // Tile Layer
+            // const tileLayer = leaflet
+            //     .tileLayer("", {
+            //         attribution:
+            //             '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            //         minZoom: 0,
+            //         maxZoom: 20,
+            //         token: "07fc4acf-0c71-4dda-aa8a-90fe9fa064b9",
+            //         ext: "png",
+            //     })
+            //     .addTo(map);
 
-    
-        var greenIcon = L.icon({
-    iconUrl: 'station.png',
-    iconAnchor:   [22, 94], // point of the icon which will correspond to marker's location
-    iconSize:  [38, 95], // size of the icon
-    popupAnchor:  [-3, -76] // point from which the popup should open relative to the iconAnchor
-    
-});
-            
+            // Custom Icon
+            var greenIcon = leaflet.icon({
+                iconUrl: "station.png",
+                iconAnchor: [22, 94], // point of the icon which will correspond to marker's location
+                iconSize: [38, 95], // size of the icon
+                popupAnchor: [-3, -76], // point from which the popup should open relative to the iconAnchor
+            });
 
- for (let i = 0; i < metrodata.length - 1; i++) {
-                function tostationadd() {
-                    to = metrodata[i].stop_name;
-                    console.log(tr);
-                }
+            // Loop through metrodata to add markers and their event handlers
+            metrodata.forEach((station, i) => {
+                const marker = leaflet
+                    .circle([station.stop_lat, station.stop_lon], 300, {
+                        icon: greenIcon,
+                    })
+                    .addTo(map).bindPopup(`
+            <div>${station.stop_name}</div>
+            <button class="tobutton">Add To</button>
+            <button class="frombutton">Add From</button>
+          `);
 
-                function fromstationadd() {
-                    from = metrodata[i].stop_name;
-                    console.log(fr);
-                }
+                // Add event listeners for "Add To" and "Add From" buttons
+                marker.on("popupopen", () => {
+                    // Event listeners inside popup
+                    document
+                        .querySelector(".tobutton")
+                        .addEventListener("click", () => {
+                            updateto(station.stop_name);
+                            console.log("To Station:", station.stop_name);
+                        });
 
-                leaflet.circle([metrodata[i].stop_lat, metrodata[i].stop_lon], 300, {icon: greenIcon}).addTo(map).bindPopup('<div>' + metrodata[i].stop_name + '</div><button id="tobutton">Add To</button> <button id="frombutton">Add From</button>')
-                    .openPopup();
+                    document
+                        .querySelector(".frombutton")
+                        .addEventListener("click", () => {
+                            updatefrom(station.stop_name);
+                            console.log("From Station:", station.stop_name);
+                        });
+                });
 
-                // Add event listeners after the popup is open
-                document.getElementById("tobutton").addEventListener("click", tostationadd);
-                document.getElementById("frombutton").addEventListener("click", fromstationadd);
+                markers.push(marker); // Add marker to the markers array
+            });
 
-                // leaflet.polyline([startPoint, endPoint], {color: 'blue'}).addTo(map);
-            }
-
-            fetch('/map.geojson')
-  .then(response => response.json())
-  .then(geojsonData => {
-    // Add GeoJSON layer to the map
-
-    // Iterate through each feature to access its properties
-      // Add properties to the JSON tree with the feature's index or id as key
-      
-    L.geoJSON(geojsonData,{
-    style: style
-}).addTo(map);
-  })
-  .catch(error => console.error('Error fetching GeoJSON:', error));
-
-            
+            // Fetch and display GeoJSON
+            fetch("/map.geojson")
+                .then((response) => response.json())
+                .then((geojsonData) => {
+                    leaflet
+                        .geoJSON(geojsonData, {
+                            style: (feature) => ({
+                                color: feature.properties.stroke || "yellow",
+                                fillColor: feature.properties.fill || "yellow",
+                                opacity:
+                                    feature.properties.strokeOpacity || 1.0,
+                                fillOpacity:
+                                    feature.properties.fillOpacity || 0.5,
+                            }),
+                        })
+                        .addTo(map);
+                })
+                .catch((error) =>
+                    console.error("Error fetching GeoJSON:", error),
+                );
         }
     });
 
-
-    onDestroy(async () => {
+    onDestroy(() => {
         if (map) {
-            console.log('Unloading Leaflet map.');
+            console.log("Unloading Leaflet map.");
             map.remove();
         }
     });
 </script>
+
 <svelte:head>
-	<script src="/script.js"></script>
+    <script src="/script.js"></script>
 </svelte:head>
+
 <main>
     <div bind:this={mapElement}></div>
 </main>
 
 <style>
-    @import 'leaflet/dist/leaflet.css';
+    @import "leaflet/dist/leaflet.css";
     main div {
         height: 500px;
+        background-color: #f5f7fa;
+        border: 2px black;
     }
 
     @media only screen and (max-width: 600px) {
