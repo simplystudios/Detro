@@ -603,93 +603,98 @@
 
     {#if frome && toe !== "undefined"}
         <div id="capture">
-            <div class="route-header">
-                <div class="route-title">
-                    {from} → {to}
-                </div>
-                <div class="route-sub">
-                    {route.length - 1} stops
-                    {#if transferStations.size}
-                        • {transferStations.size} change
-                    {/if}
-                </div>
-            </div>
-            <div class="station-cards">
-                <div class="station-card">
-                    <div class="station-name">{from}</div>
-                    <div class="station-meta">
-                        <span
-                            class="dot"
-                            style="background:{lineColors[linefrom]}"
-                        ></span>
-                        {linefrom}
+            <Card class="modern-card route-card">
+                <div class="route-header">
+                    <div class="route-title">
+                        {from} → {to}
                     </div>
-                    <div class="station-layout">
-                        {frome}
-                    </div>
-                </div>
-
-                <div class="station-card">
-                    <div class="station-name">{to}</div>
-                    <div class="station-meta">
-                        <span
-                            class="dot"
-                            style="background:{lineColors[lineto]}"
-                        ></span>
-                        {lineto}
-                    </div>
-                    <div class="station-layout">
-                        {toe}
-                    </div>
-                </div>
-            </div>
-            <div class="timeline-modern">
-                {#each route as station, i}
-                    <div class="stop">
-                        {#if i < segmentLines.length}
-                            <div
-                                class="line"
-                                style="background:{lineColors[segmentLines[i]]}"
-                            ></div>
+                    <div class="route-sub">
+                        {route.length - 1} stops
+                        {#if transferStations.size}
+                            • {transferStations.size} change
                         {/if}
-
-                        <div
-                            class="dot {transferStations.has(station)
-                                ? 'transfer'
-                                : ''}"
-                            style="border-color:{lineColors[
-                                segmentLines[i - 1]
-                            ] || lineColors[segmentLines[i]]}"
-                        ></div>
-
-                        <div class="content">
-                            <div class="station-name">{station}</div>
-
-                            {#if i === 0}
-                                <div class="hint">Board here</div>
-                            {/if}
-
-                            {#if transferStations.has(station)}
-                                <div class="change">
-                                    Change to
-                                    <span
-                                        class="pill"
-                                        style="background:{lineColors[
-                                            segmentLines[i]
-                                        ]}"
-                                    >
-                                        {segmentLines[i]}
-                                    </span>
-                                </div>
-                            {/if}
-
-                            {#if i === route.length - 1}
-                                <div class="hint">Alight here</div>
-                            {/if}
-                        </div>
                     </div>
-                {/each}
-            </div>
+                </div>
+
+                <!-- Start / End cards -->
+                <div class="station-cards">
+                    <div class="station-card">
+                        <div class="station-name">{from}</div>
+                        <div class="station-meta">
+                            <span
+                                class="dot"
+                                style="background:{lineColors[linefrom]}"
+                            ></span>
+                            {linefrom}
+                        </div>
+                        <div class="station-layout">{frome}</div>
+                    </div>
+
+                    <div class="station-card">
+                        <div class="station-name">{to}</div>
+                        <div class="station-meta">
+                            <span
+                                class="dot"
+                                style="background:{lineColors[lineto]}"
+                            ></span>
+                            {lineto}
+                        </div>
+                        <div class="station-layout">{toe}</div>
+                    </div>
+                </div>
+
+                <!-- Timeline stays here -->
+                <div class="timeline-modern">
+                    {#each route as station, i}
+                        <div class="stop">
+                            {#if i < segmentLines.length}
+                                <div
+                                    class="line"
+                                    style="background:{lineColors[
+                                        segmentLines[i]
+                                    ]}"
+                                ></div>
+                            {/if}
+
+                            <div
+                                class="dot {transferStations.has(station)
+                                    ? 'transfer'
+                                    : ''}"
+                                style="border-color:{lineColors[
+                                    segmentLines[i - 1]
+                                ] || lineColors[segmentLines[i]]}"
+                            ></div>
+
+                            <div class="content">
+                                <div class="station-name">{station}</div>
+
+                                {#if i === 0}
+                                    <div class="hint">Board here</div>
+                                {/if}
+
+                                {#if transferStations.has(station)}
+                                    <div class="change">
+                                        Change to
+                                        <span
+                                            class="pill"
+                                            style="background:{lineColors[
+                                                segmentLines[i]
+                                            ]}"
+                                        >
+                                            {segmentLines[i]}
+                                        </span>
+                                    </div>
+                                {/if}
+
+                                {#if i === route.length - 1}
+                                    <div class="hint">Alight here</div>
+                                {/if}
+                            </div>
+                        </div>
+                    {/each}
+                </div>
+                <!-- (use the timeline-modern you already added) -->
+            </Card>
         </div>
         <br />
         <div
