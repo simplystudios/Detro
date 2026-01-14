@@ -840,7 +840,7 @@
 
     .station-card {
         flex: 1;
-        background: #ffffff;
+        background: #f8f8f8;
         border-radius: 10px;
         padding: 12px;
         text-align: center;
