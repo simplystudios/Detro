@@ -2,6 +2,7 @@
     import LeafletMap from "$lib/LeafletMap.svelte";
     import { onMount } from "svelte";
     import Autocomplete from "@smui-extra/autocomplete";
+    import { Footprints } from "lucide-svelte";
     import Snackbar from "@smui/snackbar";
     import Textfield from "@smui/textfield";
     import Card, { Content } from "@smui/card";
@@ -10,6 +11,8 @@
 
     /* ---------- UI STATE (DO NOT BREAK) ---------- */
 
+    let size = 25;
+    let color = "gray";
     let stationslist = [
         "Dilshad Garden",
         "Jhilmil",
@@ -294,7 +297,7 @@
     const lineColors = {
         "Red line": "#d32f2f",
         "Yellow line": "#FFF176",
-        "Blue line": "#1976d2",
+        "Blue line main": "#1976d2",
         "Blue line branch": "#1976d2",
         "Pink line": "#FFC0CB",
         "Green line": "#008000",
@@ -533,7 +536,7 @@
                 </Card>
             {:else}
                 <Card
-                    style="display:flex; justify-content:center; align-items:center;"
+                    style="display:flex; justify-content:center; padding: 10px; align-items:center;"
                 >
                     <img width="200px" height="155px" src="/noloc.svg" alt="" />
                     <h1>Cannot Access Your Location</h1>
@@ -545,7 +548,7 @@
                 style="background-color: #c0282c; box-shadow: 0px 2px 2px #727272;"
             >
                 <h1
-                    style="color:white; font-weight:400; padding:10px; text-align: center; font-size: large;"
+                    style="color:white; font-weight:400; padding:10px; border-radius: 10px; text-align: center; font-size: large;"
                 >
                     Plan Your Journey
                 </h1>
@@ -553,7 +556,7 @@
             <Card>
                 <div
                     class="dres"
-                    style="z-index: 950; padding:20px; border:1px; border-radius:5px; "
+                    style="z-index: 950; padding:20px; border:1px; border-radius:40px; "
                 >
                     <br />
                     <div class="pickers">
@@ -644,40 +647,60 @@
                 </div>
 
                 <!-- Timeline stays here -->
-                <div class="timeline-modern">
+
+                <div class="modern-timeline">
                     {#each route as station, i}
-                        <div class="stop">
-                            {#if i < segmentLines.length}
+                        <div
+                            class="timeline-item {transferStations.has(station)
+                                ? 'is-transfer'
+                                : ''}"
+                        >
+                            <div class="timeline-visual">
                                 <div
-                                    class="line"
-                                    style="background:{lineColors[
+                                    class="node"
+                                    style="border-color: {lineColors[
                                         segmentLines[i]
-                                    ]}"
+                                    ] ||
+                                        lineColors[segmentLines[i - 1]] ||
+                                        '#ccc'}"
                                 ></div>
-                            {/if}
 
-                            <div
-                                class="dot {transferStations.has(station)
-                                    ? 'transfer'
-                                    : ''}"
-                                style="border-color:{lineColors[
-                                    segmentLines[i - 1]
-                                ] || lineColors[segmentLines[i]]}"
-                            ></div>
-
-                            <div class="content">
-                                <div class="station-name">{station}</div>
-
-                                {#if i === 0}
-                                    <div class="hint">Board here</div>
+                                {#if i < route.length - 1}
+                                    <div
+                                        class="connector {!segmentLines[i]
+                                            ? 'is-walking'
+                                            : ''}"
+                                        style="background: {segmentLines[i]
+                                            ? lineColors[segmentLines[i]]
+                                            : 'transparent'}"
+                                    ></div>
                                 {/if}
+                            </div>
 
-                                {#if transferStations.has(station)}
-                                    <div class="change">
-                                        Change to
+                            <div class="timeline-content">
+                                <div class="st-row">
+                                    <span class="st-name">{station}</span>
+                                    {#if i === 0}<span class="badge board"
+                                            >Start</span
+                                        >{/if}
+                                    {#if i === route.length - 1}<span
+                                            class="badge alight">End</span
+                                        >{/if}
+                                </div>
+
+                                {#if !segmentLines[i] && i < route.length - 1}
+                                    <div class="walk-info">
+                                        <Footprints {color} {size} />
+                                        <span>Walk to connected station</span>
+                                    </div>
+                                {:else if transferStations.has(station) && i < route.length - 1}
+                                    <div class="transfer-info">
+                                        <span class="change-label"
+                                            >Change to</span
+                                        >
                                         <span
-                                            class="pill"
-                                            style="background:{lineColors[
+                                            class="line-pill"
+                                            style="background: {lineColors[
                                                 segmentLines[i]
                                             ]}"
                                         >
@@ -685,14 +708,11 @@
                                         </span>
                                     </div>
                                 {/if}
-
-                                {#if i === route.length - 1}
-                                    <div class="hint">Alight here</div>
-                                {/if}
                             </div>
                         </div>
                     {/each}
                 </div>
+
                 <!-- (use the timeline-modern you already added) -->
             </Card>
         </div>
@@ -812,6 +832,153 @@
         border: 1;
         border-radius: 6px;
         margin-right: 5px;
+    }
+    /* Layout & Base */
+    :global(body) {
+        background-color: #f4f7f6;
+        font-family: "Inter", sans-serif;
+    }
+    .app-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 10px;
+    }
+
+    /* Cards */
+    :global(.route-card) {
+        border-radius: 16px;
+        overflow: hidden;
+        border: none;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Header */
+    .route-header {
+        background: #c0282c;
+        color: white;
+        padding: 20px;
+    }
+    .route-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+    }
+    .route-sub {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        margin-top: 4px;
+    }
+
+    /* Timeline Alignment Engine */
+    .modern-timeline {
+        padding: 25px;
+        display: flex;
+        flex-direction: column;
+    }
+    .timeline-item {
+        display: flex;
+        gap: 20px;
+        min-height: 50px;
+    }
+
+    .timeline-visual {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 20px;
+        flex-shrink: 0;
+    }
+
+    .node {
+        width: 14px;
+        height: 14px;
+        background: white;
+        border: 4px solid;
+        border-radius: 50%;
+        z-index: 2;
+    }
+
+    .connector {
+        width: 4px;
+        flex-grow: 1;
+        margin: -2px 0;
+        z-index: 1;
+        border-radius: 2px;
+    }
+
+    .connector.is-walking {
+        border-left: 3px dotted #ccc;
+        background: transparent !important;
+        width: 0;
+        margin-left: 1px;
+    }
+
+    /* Content Styling */
+    .timeline-content {
+        padding-bottom: 25px;
+        flex-grow: 1;
+    }
+    .st-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .st-name {
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    /* Badges & Pills */
+    .badge {
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+    .badge.board {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+    .badge.alight {
+        background: #ffebee;
+        color: #c62828;
+    }
+
+    .transfer-info,
+    .walk-info {
+        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .line-pill {
+        padding: 3px 12px;
+        border-radius: 20px;
+        color: white;
+        font-size: 11px;
+    }
+
+    .change-label {
+        color: #666;
+    }
+
+    .walk-info {
+        color: #888;
+        font-style: italic;
+        background: #f0f0f0;
+        padding: 4px 10px;
+        border-radius: 6px;
+        width: fit-content;
+    }
+
+    /* Fix for SMUI overlapping map */
+    main {
+        position: relative;
+        z-index: 1;
     }
     .timeline {
         list-style: none;

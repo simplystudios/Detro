@@ -6,12 +6,21 @@ import path from "path";
 
 const res = await fetch("https://detroweb.vercel.app/metrolines.json");
 const lines = await res.json();
+const interchanges = [
+  { from: "Noida Sec-52", to: "Noida Sector 51", note: "Walkway transfer" },
+  {
+    from: "Dilli Haat - INA",
+    to: "Dilli Haat - INA",
+    note: "Internal transfer",
+  },
+  // Add any other stations that have slightly different names but are the same location
+];
 
 /* ---------- GRAPH ---------- */
-console.log("hello world");
-
 function buildGraph(lines) {
   const g = {};
+
+  // 1. Build standard connections within lines
   for (const line in lines) {
     const s = lines[line];
     for (let i = 0; i < s.length - 1; i++) {
@@ -21,6 +30,15 @@ function buildGraph(lines) {
       g[s[i + 1]].push(s[i]);
     }
   }
+
+  // 2. Build manual bridges (Virtual Transfers)
+  interchanges.forEach((link) => {
+    if (g[link.from] && g[link.to]) {
+      g[link.from].push(link.to);
+      g[link.to].push(link.from);
+    }
+  });
+
   return g;
 }
 
