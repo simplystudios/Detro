@@ -8,7 +8,7 @@
     let leaflet;
     let metrodata = [];
     let haloLayer;
-    let riverLayer; // New layer for Yamuna
+    let riverLayer; 
     let markersMap = new Map();
     let toastMessage = "";
     let showToast = false;
@@ -37,13 +37,19 @@
 
     $: theme = themes[currentThemeKey];
 
+    // Reactive UI Updates
+    $: if (mapElement && theme) {
+        mapElement.style.setProperty('--ui-color', theme.ui);
+        mapElement.style.setProperty('--bg-color', theme.bg);
+    }
+
     function triggerToast(msg) {
         toastMessage = msg;
         showToast = true;
         setTimeout(() => { showToast = false; }, 2000);
     }
 
-    function changeBackground() {
+    function changeTheme() {
         if (!map) return;
         mapElement.style.backgroundColor = theme.bg;
         if (haloLayer) haloLayer.setStyle({ color: theme.halo });
@@ -58,11 +64,12 @@
     }
 
     function zoomToStation(station) {
-        map.flyTo([station.stop_lat, station.stop_lon], 16, { duration: 1.5 });
+        map.flyTo([station.stop_lat, station.stop_lon], 15, { duration: 1.5 });
         const marker = markersMap.get(station.stop_name);
         if (marker) {
             document.querySelectorAll(".is-highlighted").forEach((el) => el.classList.remove("is-highlighted"));
-            marker.getElement().querySelector(".marker-visual").classList.add("is-highlighted");
+            const el = marker.getElement()?.querySelector(".marker-visual");
+            if (el) el.classList.add("is-highlighted");
             marker.openPopup();
         }
         searchQuery = "";
@@ -88,27 +95,33 @@
             map = leaflet.map(mapElement, {
                 zoomControl: false,
                 attributionControl: false,
-                maxBounds: [[28.2, 76.8], [28.9, 77.6]],
                 minZoom: 10
             }).setView([28.6139, 77.209], 11);
+
+            // Zoom Listener to toggle labels
+            map.on('zoomend', () => {
+                const zoom = map.getZoom();
+                const container = map.getContainer();
+                zoom >= 13 ? container.classList.add('show-labels') : container.classList.remove('show-labels');
+            });
 
             map.createPane("riverPane").style.zIndex = 300;
             map.createPane("halosPane").style.zIndex = 390;
             map.createPane("linesPane").style.zIndex = 400;
             map.createPane("stationsPane").style.zIndex = 450;
 
-            // Simple Yamuna Representation
-            const yamunaCoords = [
-                [28.85, 77.2], [28.75, 77.23], [28.7, 77.26], [28.65, 77.27], 
-                [28.6, 77.28], [28.55, 77.3], [28.45, 77.32], [28.3, 77.35]
+            // Minimalist Yamuna River
+            const yamunaPath = [
+                [28.87, 77.21], [28.82, 77.23], [28.75, 77.23], [28.70, 77.26], 
+                [28.66, 77.28], [28.58, 77.30], [28.52, 77.32], [28.45, 77.33]
             ];
-            riverLayer = leaflet.polyline(yamunaCoords, {
+            riverLayer = leaflet.polyline(yamunaPath, {
                 pane: "riverPane",
                 color: theme.river,
-                weight: 40,
-                opacity: 0.6,
+                weight: 45,
+                opacity: 0.5,
                 lineCap: 'round',
-                smoothFactor: 5
+                smoothFactor: 3
             }).addTo(map);
 
             haloLayer = leaflet.geoJSON(geojsonData, {
@@ -127,15 +140,18 @@
                 }),
             }).addTo(map);
 
-            metrodata.forEach((station) => {
+            metrodata.forEach((station, index) => {
                 const isHub = station.connection && station.connection !== "null";
                 const borderColor = lineColors[station.connection] || "#2c3e50";
+                const isOffsetRight = index % 2 === 0;
 
                 const stationIcon = leaflet.divIcon({
                     className: "transit-marker-wrapper",
                     html: `
                         <div class="marker-visual ${isHub ? "hub-pill" : "stop-dot"}" style="border-color: ${borderColor}"></div>
-                        <span class="station-label">${station.stop_name}</span>
+                        <span class="station-label ${isOffsetRight ? 'label-right' : 'label-left'}">
+                            ${station.stop_name}
+                        </span>
                     `,
                     iconSize: [20, 20],
                     iconAnchor: [10, 10],
@@ -154,7 +170,8 @@
                             <button class="frombtn" onclick="window.updatefrom('${station.stop_name}')">From</button>
                         </div>
                     </div>
-                `);
+                `, { offset: [0, -5] });
+                
                 markersMap.set(station.stop_name, marker);
             });
 
@@ -172,27 +189,22 @@
 
 <main>
     <div class="ui-overlay">
-        <div class="search-bar">
+        <div class="control-box">
             <input
                 type="text"
-                placeholder="Search Metro Station..."
+                placeholder="Search station..."
                 bind:value={searchQuery}
                 on:input={handleSearch}
-                style="color: {theme.ui}"
             />
-            <select bind:value={currentThemeKey} on:change={changeBackground}>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-                <option value="slate">Slate</option>
-                <option value="nord">Nord</option>
-                <option value="paper">Paper</option>
-                <option value="dracula">Dracula</option>
-                <option value="matcha">Matcha</option>
+            <select bind:value={currentThemeKey} on:change={changeTheme}>
+                {#each Object.keys(themes) as t}
+                    <option value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                {/each}
             </select>
         </div>
 
         {#if filteredStations.length > 0}
-            <div class="search-results">
+            <div class="results-dropdown">
                 {#each filteredStations as s}
                     <button on:click={() => zoomToStation(s)}>{s.stop_name}</button>
                 {/each}
@@ -202,13 +214,13 @@
 
     <div 
         bind:this={mapElement} 
-        class="full-map" 
+        class="map-viewport" 
         style="background-color: {theme.bg}">
     </div>
 
     {#if showToast}
-        <div class="toast">{toastMessage}</div>
-    {/if}
+        <div class="toast-popup">{toastMessage}</div>
+    {if}
 </main>
 
 <style>
@@ -216,16 +228,18 @@
         margin: 0;
         padding: 0;
         overflow: hidden;
-        font-family: 'Inter', sans-serif;
+        height: 100%;
+        width: 100%;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica;
     }
 
-    .full-map {
+    .map-viewport {
         height: 100vh;
         width: 100vw;
-        z-index: 1;
+        transition: background-color 0.5s ease;
     }
 
-    /* Floating UI */
+    /* Floating UI Controls */
     .ui-overlay {
         position: fixed;
         top: 20px;
@@ -233,62 +247,75 @@
         transform: translateX(-50%);
         z-index: 1000;
         width: 90%;
-        max-width: 500px;
+        max-width: 450px;
     }
 
-    .search-bar {
+    .control-box {
         display: flex;
-        gap: 10px;
-        background: rgba(255, 255, 255, 0.9);
-        backdrop-filter: blur(10px);
-        padding: 8px;
-        border-radius: 14px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(12px);
+        padding: 6px;
+        border-radius: 16px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        border: 1px solid rgba(0,0,0,0.05);
     }
 
     input, select {
         border: none;
         background: transparent;
-        padding: 10px;
+        padding: 10px 15px;
         outline: none;
+        font-size: 14px;
+        color: #333;
     }
     input { flex: 1; font-weight: 500; }
+    select { border-left: 1px solid rgba(0,0,0,0.1); cursor: pointer; }
 
-    .search-results {
+    .results-dropdown {
         background: white;
         margin-top: 8px;
         border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         overflow: hidden;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     }
-    .search-results button {
+    .results-dropdown button {
         width: 100%;
-        padding: 12px;
+        padding: 12px 20px;
         border: none;
         background: none;
         text-align: left;
         cursor: pointer;
-        border-bottom: 1px solid #eee;
+        font-size: 14px;
     }
-    .search-results button:hover { background: #f8f9fa; }
+    .results-dropdown button:hover { background: #f0f0f0; }
 
-    /* Station Labels */
+    /* Smart Labels System */
     :global(.transit-marker-wrapper) {
         display: flex;
-        flex-direction: column;
         align-items: center;
-        text-align: center;
+        justify-content: center;
         pointer-events: none !important;
     }
+
     :global(.station-label) {
-        font-size: 9px;
-        font-weight: 600;
-        color: #555;
-        text-shadow: 0 0 3px white;
-        margin-top: 4px;
+        position: absolute;
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--ui-color);
+        text-shadow: 0 0 4px var(--bg-color), 0 0 2px var(--bg-color);
         white-space: nowrap;
-        opacity: 0.8;
+        display: none; /* Hidden by default */
+        letter-spacing: -0.2px;
     }
+
+    /* Show labels only when map has 'show-labels' class (Zoom 13+) */
+    :global(.show-labels .station-label) {
+        display: block;
+    }
+
+    :global(.label-right) { left: 15px; text-align: left; }
+    :global(.label-left) { right: 15px; text-align: right; }
+
     :global(.stop-dot) {
         width: 7px; height: 7px;
         background: white; border: 2px solid; border-radius: 50%;
@@ -300,26 +327,28 @@
 
     :global(.is-highlighted) {
         border-color: #ff4757 !important;
-        transform: scale(1.8);
+        transform: scale(2);
         animation: pulse 1.5s infinite;
+        z-index: 999;
     }
 
-    .toast {
+    .toast-popup {
         position: fixed;
-        bottom: 30px;
+        bottom: 40px;
         left: 50%;
         transform: translateX(-50%);
-        background: #333;
+        background: #2c3e50;
         color: white;
-        padding: 10px 24px;
-        border-radius: 30px;
-        z-index: 2000;
+        padding: 10px 25px;
+        border-radius: 50px;
         font-size: 13px;
+        z-index: 10000;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
 
     @keyframes pulse {
         0% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
-        70% { box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
+        70% { box-shadow: 0 0 0 12px rgba(255, 71, 87, 0); }
         100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
     }
 </style>
