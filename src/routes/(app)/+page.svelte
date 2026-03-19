@@ -747,7 +747,7 @@
     <br />
 
     {#if frome && toe !== "undefined"}
-        <div style="align-items: center; justify-content: center;">
+        <div style="height: 400px;">
             <SchematicRoute route={rawroute} />
         </div>
         <div id="capture">

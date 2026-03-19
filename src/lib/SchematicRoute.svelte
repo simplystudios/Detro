@@ -20,6 +20,7 @@
     };
 
     const TRACK_W = 12;
+    const HALO_W = TRACK_W + 8;
     const STOP_R = 10;
     const TERM_R = 15;
     const XFER_W = 32;
@@ -65,7 +66,6 @@
             y = PAD_Y;
 
         for (let i = 0; i < n; i++) {
-            // Find the color of the line passing through this node for the text color
             let ptColor = "#555";
             if (i < n - 1) {
                 ptColor = LINE_COLORS[segLines[i]] ?? "#555";
@@ -168,6 +168,7 @@
     let isAnimating = false;
     let currentStationIndex = 0;
 
+    // Trigger on load: center on the VERY FIRST station
     $: if (layout && canvasW && canvasH) {
         const currentRouteKey =
             route?.route?.[0]?.station +
@@ -175,14 +176,8 @@
             route?.route?.[route.route.length - 1]?.station;
 
         if (lastCenteredRoute !== currentRouteKey) {
-            const fitScale = (canvasW - 40) / layout.svgW;
-            scale = Math.min(1, Math.max(0.3, fitScale));
-            initialScale = scale;
-
-            tx = (canvasW - layout.svgW * scale) / 2;
-            ty = (canvasH - layout.svgH * scale) / 2;
-
             currentStationIndex = 0;
+            centerOnStation(0); // Snap to start immediately
             lastCenteredRoute = currentRouteKey;
         }
     }
@@ -192,7 +187,7 @@
             return;
         const pt = layout.pts[index];
 
-        scale = 1.6;
+        scale = 1.6; // Keep a zoomed-in focus
         initialScale = scale;
 
         tx = canvasW / 2 - pt.x * scale;
@@ -337,66 +332,27 @@
                 ? 'transform 0.4s ease-out'
                 : 'none'};"
         >
-            <defs>
-                <mask id="track-cutout">
-                    <rect width="100%" height="100%" fill="white" />
+            {#each layout.segs as seg}
+                <path
+                    d={seg.d}
+                    stroke="var(--halo-color)"
+                    stroke-width={HALO_W}
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    fill="none"
+                />
+            {/each}
 
-                    {#each layout.lineLabels as lbl}
-                        <rect
-                            x={lbl.x - lbl.width / 2 - 4}
-                            y={lbl.y - 16}
-                            width={lbl.width + 8}
-                            height={32}
-                            rx={10}
-                            fill="black"
-                        />
-                    {/each}
-
-                    {#each layout.pts as pt, i}
-                        {@const isFirst = i === 0}
-                        {@const isLast = i === layout.pts.length - 1}
-                        {@const isTerm = isFirst || isLast}
-
-                        {#if isTerm}
-                            <circle
-                                cx={pt.x}
-                                cy={pt.y}
-                                r={TERM_R + 4}
-                                fill="black"
-                            />
-                        {:else if pt.isTransfer}
-                            <rect
-                                x={pt.x - XFER_W / 2 - 4}
-                                y={pt.y - XFER_H / 2 - 4}
-                                width={XFER_W + 8}
-                                height={XFER_H + 8}
-                                rx={(XFER_H + 8) / 2}
-                                fill="black"
-                            />
-                        {:else}
-                            <circle
-                                cx={pt.x}
-                                cy={pt.y}
-                                r={STOP_R + 4}
-                                fill="black"
-                            />
-                        {/if}
-                    {/each}
-                </mask>
-            </defs>
-
-            <g mask="url(#track-cutout)">
-                {#each layout.segs as seg}
-                    <path
-                        d={seg.d}
-                        stroke={seg.color}
-                        stroke-width={TRACK_W}
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        fill="none"
-                    />
-                {/each}
-            </g>
+            {#each layout.segs as seg}
+                <path
+                    d={seg.d}
+                    stroke={seg.color}
+                    stroke-width={TRACK_W}
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    fill="none"
+                />
+            {/each}
 
             {#each layout.lineLabels as lbl}
                 <rect
@@ -404,8 +360,10 @@
                     y={lbl.y - 12}
                     width={lbl.width}
                     height={24}
-                    rx={6}
+                    rx={12}
                     fill={lbl.color}
+                    stroke="var(--halo-color)"
+                    stroke-width="3"
                 />
                 <text
                     x={lbl.x}
@@ -430,8 +388,16 @@
                     <circle
                         cx={pt.x}
                         cy={pt.y}
+                        r={TERM_R + 3}
+                        fill="var(--halo-color)"
+                    />
+                    <circle
+                        cx={pt.x}
+                        cy={pt.y}
                         r={TERM_R}
                         fill="var(--node-bg)"
+                        stroke="var(--text-main)"
+                        stroke-width="2.5"
                     />
                     <text
                         x={pt.x}
@@ -439,9 +405,17 @@
                         dominant-baseline="central"
                         text-anchor="middle"
                         class="node-num num-terminal"
-                        fill={pt.color}>{pt.stopNumber}</text
+                        fill="var(--text-main)">{pt.stopNumber}</text
                     >
                 {:else if pt.isTransfer}
+                    <rect
+                        x={pt.x - XFER_W / 2 - 3}
+                        y={pt.y - XFER_H / 2 - 3}
+                        width={XFER_W + 6}
+                        height={XFER_H + 6}
+                        rx={(XFER_H + 6) / 2}
+                        fill="var(--halo-color)"
+                    />
                     <rect
                         x={pt.x - XFER_W / 2}
                         y={pt.y - XFER_H / 2}
@@ -449,6 +423,8 @@
                         height={XFER_H}
                         rx={XFER_H / 2}
                         fill="var(--node-bg)"
+                        stroke="var(--text-main)"
+                        stroke-width="2"
                     />
                     <text
                         x={pt.x}
@@ -456,14 +432,22 @@
                         dominant-baseline="central"
                         text-anchor="middle"
                         class="node-num num-transfer"
-                        fill={pt.color}>{pt.stopNumber}</text
+                        fill="var(--text-main)">{pt.stopNumber}</text
                     >
                 {:else}
                     <circle
                         cx={pt.x}
                         cy={pt.y}
+                        r={STOP_R + 3}
+                        fill="var(--halo-color)"
+                    />
+                    <circle
+                        cx={pt.x}
+                        cy={pt.y}
                         r={STOP_R}
                         fill="var(--node-bg)"
+                        stroke="var(--text-main)"
+                        stroke-width="1.5"
                     />
                     <text
                         x={pt.x}
@@ -513,15 +497,15 @@
         --text-main: #1a1c29;
         --node-bg: #ffffff;
         --grid-color: rgba(0, 0, 0, 0.08);
-        --label-halo: rgba(255, 255, 255, 0.9);
+        --halo-color: #f4f5f8; /* Needs to match light mode BG */
     }
 
     @media (prefers-color-scheme: dark) {
         :root {
             --text-main: #f3f4f6;
-            --node-bg: #2a2d3e; /* Sleek, dark surface color for the flat pills */
+            --node-bg: #171413; /* Exact Sketchware BG */
             --grid-color: rgba(255, 255, 255, 0.05);
-            --label-halo: #171413; /* Text halo cutout */
+            --halo-color: #171413; /* Exact Sketchware BG to make halos invisible */
         }
     }
 
@@ -565,7 +549,7 @@
     .node-label {
         fill: var(--text-main);
         paint-order: stroke fill;
-        stroke: var(--label-halo);
+        stroke: var(--halo-color); /* Label text gets a halo too */
         stroke-width: 4px;
         stroke-linecap: round;
         stroke-linejoin: round;
