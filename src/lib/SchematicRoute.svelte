@@ -274,7 +274,14 @@
             style="display:block; transform-origin:0 0; transform:translate({tx}px,{ty}px) scale({scale}); transition: none;"
         >
             {#each layout.segs as seg}
-                <path d={seg.d} class="line-halo" stroke-width={HALO_W} />
+                <path
+                    d={seg.d}
+                    stroke="var(--bg-color)"
+                    stroke-width={HALO_W}
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    fill="none"
+                />
             {/each}
 
             {#each layout.segs as seg}
@@ -298,7 +305,6 @@
                     fill={lbl.color}
                     stroke="var(--bg-color)"
                     stroke-width="3"
-                    class="line-badge-rect"
                 />
                 <text
                     x={lbl.x}
@@ -308,7 +314,6 @@
                     font-size="11"
                     font-weight="700"
                     fill="white"
-                    class="line-badge-text"
                 >
                     {lbl.name}
                 </text>
@@ -325,20 +330,23 @@
                         cx={pt.x}
                         cy={pt.y}
                         r={TERM_R + 3}
-                        class="line-halo-fill"
+                        fill="var(--bg-color)"
                     />
                     <circle
                         cx={pt.x}
                         cy={pt.y}
                         r={TERM_R}
-                        class="node-terminal"
+                        fill="var(--text-main)"
                     />
                     <text
                         x={pt.x}
                         y={pt.y}
                         dominant-baseline="central"
                         text-anchor="middle"
-                        class="node-num num-terminal">{pt.stopNumber}</text
+                        font-size="13"
+                        font-weight="800"
+                        fill="var(--bg-color)"
+                        style="pointer-events: none;">{pt.stopNumber}</text
                     >
                 {:else if pt.isTransfer}
                     <rect
@@ -347,7 +355,8 @@
                         width={XFER_W}
                         height={XFER_H}
                         rx={XFER_H / 2}
-                        class="node-transfer"
+                        fill="var(--bg-color)"
+                        stroke="var(--text-main)"
                         stroke-width="3"
                     />
                     <text
@@ -355,22 +364,35 @@
                         y={pt.y}
                         dominant-baseline="central"
                         text-anchor="middle"
-                        class="node-num num-transfer">{pt.stopNumber}</text
+                        font-size="11"
+                        font-weight="800"
+                        fill="var(--text-main)"
+                        style="pointer-events: none;">{pt.stopNumber}</text
                     >
                 {:else}
                     <circle
                         cx={pt.x}
                         cy={pt.y}
                         r={STOP_R + 3}
-                        class="line-halo-fill"
+                        fill="var(--bg-color)"
                     />
-                    <circle cx={pt.x} cy={pt.y} r={STOP_R} class="node-stop" />
+                    <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r={STOP_R}
+                        fill="var(--bg-color)"
+                        stroke="var(--border-color)"
+                        stroke-width="1.5"
+                    />
                     <text
                         x={pt.x}
                         y={pt.y}
                         dominant-baseline="central"
                         text-anchor="middle"
-                        class="node-num num-stop">{pt.stopNumber}</text
+                        font-size="10"
+                        font-weight="800"
+                        fill="var(--text-main)"
+                        style="pointer-events: none;">{pt.stopNumber}</text
                     >
                 {/if}
 
@@ -378,11 +400,17 @@
                     <text
                         x={pt.x}
                         y={pt.y}
-                        class="node-label"
-                        class:term-label={isTerm}
                         text-anchor={lbl.side === "rotated"
                             ? "start"
                             : "middle"}
+                        font-size={isTerm ? "14" : "12"}
+                        font-weight={isTerm ? "700" : "600"}
+                        fill="var(--text-main)"
+                        stroke="var(--bg-color)"
+                        stroke-width="4"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        style="paint-order: stroke fill;"
                         transform={lbl.side === "above"
                             ? `translate(0, -${isTerm ? TERM_R + 10 : pt.isTransfer ? XFER_H / 2 + 10 : STOP_R + 12})`
                             : lbl.side === "below"
@@ -404,11 +432,11 @@
         margin: 0;
         padding: 0;
         overflow: hidden;
-        background-color: #0f111a; /* Fallback to prevent white flashes */
+        background-color: transparent; /* 👈 1. Changed to transparent */
     }
 
     :root {
-        --bg-color: #f4f5f8;
+        --bg-color: #f4f5f8; /* Light mode cutout color */
         --border-color: #e2e4e9;
         --text-main: #1a1c29;
         --grid-color: rgba(0, 0, 0, 0.06);
@@ -417,7 +445,9 @@
 
     @media (prefers-color-scheme: dark) {
         :root {
-            --bg-color: #0f111a;
+            /* 👇 2. Change this to the EXACT hex code of your Sketchware app's background! */
+            --bg-color: #171413;
+
             --border-color: #262a3d;
             --text-main: #f3f4f6;
             --grid-color: rgba(255, 255, 255, 0.05);
@@ -428,7 +458,7 @@
         overflow: hidden;
         width: 100vw;
         height: 100vh;
-        background-color: var(--bg-color);
+        background-color: transparent; /* 👈 3. Changed to transparent */
         background-image: radial-gradient(
             var(--grid-color) 1.5px,
             transparent 1.5px
@@ -438,73 +468,5 @@
         -webkit-user-select: none;
         user-select: none;
         font-family: "DM Sans", system-ui, sans-serif;
-    }
-
-    .canvas svg {
-        will-change: transform;
-        user-select: none;
-    }
-
-    .line-halo {
-        stroke: var(--halo-color);
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        fill: none;
-    }
-
-    .line-halo-fill {
-        fill: var(--halo-color);
-    }
-
-    .node-terminal {
-        fill: var(--text-main);
-    }
-
-    .node-transfer {
-        fill: var(--bg-color);
-        stroke: var(--text-main);
-    }
-
-    .node-stop {
-        fill: var(--bg-color);
-        stroke: var(--border-color);
-        stroke-width: 1.5px;
-    }
-
-    .node-num {
-        font-family: "DM Sans", system-ui, sans-serif;
-        font-weight: 800;
-        pointer-events: none;
-    }
-
-    .num-terminal {
-        font-size: 13px;
-        fill: var(--bg-color);
-    }
-
-    .num-transfer {
-        font-size: 11px;
-        fill: var(--text-main);
-    }
-
-    .num-stop {
-        font-size: 10px;
-        fill: var(--text-main);
-    }
-
-    .node-label {
-        font-size: 12px;
-        font-weight: 600;
-        fill: var(--text-main);
-        paint-order: stroke fill;
-        stroke: var(--bg-color);
-        stroke-width: 4px;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-    }
-
-    .term-label {
-        font-size: 14px;
-        font-weight: 700;
     }
 </style>
