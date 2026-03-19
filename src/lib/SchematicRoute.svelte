@@ -17,7 +17,6 @@
         "Rapid Metro": "#283593",
     };
 
-    // ── Transitive Layout constants ───────────────────────────────────────────
     const TRACK_W = 12;
     const HALO_W = TRACK_W + 8;
     const STOP_R = 10;
@@ -32,22 +31,14 @@
     const ICON_WORK =
         "M4 21h1.5V15.7c1-.7 2.5-1.2 3.5-1.2 3 0 5 3 9 1V5c-4 2-6-.5-9-.5-1.5 0-3 .5-4 1.5V4H4v17z";
 
-    // ── Build layout (Svelte 4 Reactivity) ────────────────────────────────────
     $: layout = (() => {
         if (!route?.route?.length) return null;
 
-        // 🛠️ THE FIX: Map the new JSON object structure into flat arrays
-        // Extract just the station names
         const names = route.route.map((r) => r.station);
-
-        // Extract the lines for the segments.
-        // A segment between Stop A and Stop B takes the line color of Stop B.
         const segLines = route.route.slice(1).map((r) => r.line);
-
         const transfers = new Set(route.transferStations ?? []);
         const n = names.length;
 
-        // ── ADAPTIVE SPACING ──
         let H_STEP = 120;
         if (n > 1) {
             let maxRequiredStep = 100;
@@ -167,13 +158,6 @@
         };
     })();
 
-    // 🛠️ THE FIX: Extract the unique lines from the new object structure for the Header Chips
-    $: uniqueLines =
-        route && route.route
-            ? [...new Set(route.route.map((r) => r.line))]
-            : [];
-
-    // ── MOBILE & DESKTOP Zoom / Pan ───────────────────────────────────────────
     let scale = 1;
     let tx = 0,
         ty = 0;
@@ -266,267 +250,184 @@
 </script>
 
 {#if route && layout}
-    <div class="schema-outer" style="--scale: {scale};">
-        <div class="hdr">
-            <div class="route-title">{route.from} → {route.to}</div>
-            <div class="chips">
-                <span class="chip gray">{route.stops} stops</span>
-                {#each uniqueLines as ln}
-                    <span
-                        class="chip"
-                        style="background:{LINE_COLORS[ln] ?? '#555'}"
-                        >{ln}</span
-                    >
-                {/each}
-                {#if route.transferStations?.length}
-                    <span class="chip amber"
-                        >⇄ Change at {route.transferStations.join(", ")}</span
-                    >
-                {/if}
-            </div>
-        </div>
-
-        <div
-            class="canvas"
-            style="cursor:{panning
-                ? 'grabbing'
-                : 'grab'}; background-position: {tx}px {ty}px; background-size: {24 *
-                scale}px {24 * scale}px;"
-            on:wheel={onWheel}
-            on:mousedown={onMD}
-            on:mousemove={onMM}
-            on:mouseup={onMU}
-            on:mouseleave={onMU}
-            on:touchstart={onTS}
-            on:touchmove={onTM}
-            on:touchend={onTE}
-            on:touchcancel={onTE}
-            role="img"
+    <div
+        class="canvas"
+        style="cursor:{panning
+            ? 'grabbing'
+            : 'grab'}; background-position: {tx}px {ty}px; background-size: {24 *
+            scale}px {24 * scale}px;"
+        on:wheel={onWheel}
+        on:mousedown={onMD}
+        on:mousemove={onMM}
+        on:mouseup={onMU}
+        on:mouseleave={onMU}
+        on:touchstart={onTS}
+        on:touchmove={onTM}
+        on:touchend={onTE}
+        on:touchcancel={onTE}
+        role="img"
+    >
+        <svg
+            width={layout.svgW}
+            height={layout.svgH}
+            viewBox="0 0 {layout.svgW} {layout.svgH}"
+            style="display:block; transform-origin:0 0; transform:translate({tx}px,{ty}px) scale({scale}); transition: none;"
         >
-            <svg
-                width={layout.svgW}
-                height={layout.svgH}
-                viewBox="0 0 {layout.svgW} {layout.svgH}"
-                style="display:block; transform-origin:0 0; transform:translate({tx}px,{ty}px) scale({scale}); transition: none;"
-            >
-                {#each layout.segs as seg}
-                    <path d={seg.d} class="line-halo" stroke-width={HALO_W} />
-                {/each}
+            {#each layout.segs as seg}
+                <path d={seg.d} class="line-halo" stroke-width={HALO_W} />
+            {/each}
 
-                {#each layout.segs as seg}
-                    <path
-                        d={seg.d}
-                        stroke={seg.color}
-                        stroke-width={TRACK_W}
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        fill="none"
+            {#each layout.segs as seg}
+                <path
+                    d={seg.d}
+                    stroke={seg.color}
+                    stroke-width={TRACK_W}
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    fill="none"
+                />
+            {/each}
+
+            {#each layout.lineLabels as lbl}
+                <rect
+                    x={lbl.x - lbl.width / 2}
+                    y={lbl.y - 12}
+                    width={lbl.width}
+                    height={24}
+                    rx={6}
+                    fill={lbl.color}
+                    stroke="var(--bg-color)"
+                    stroke-width="3"
+                    class="line-badge-rect"
+                />
+                <text
+                    x={lbl.x}
+                    y={lbl.y}
+                    dominant-baseline="central"
+                    text-anchor="middle"
+                    font-size="11"
+                    font-weight="700"
+                    fill="white"
+                    class="line-badge-text"
+                >
+                    {lbl.name}
+                </text>
+            {/each}
+
+            {#each layout.pts as pt, i}
+                {@const isFirst = i === 0}
+                {@const isLast = i === layout.pts.length - 1}
+                {@const isTerm = isFirst || isLast}
+                {@const lbl = labelAngle(i, pt, layout)}
+
+                {#if isTerm}
+                    <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r={TERM_R + 3}
+                        class="line-halo-fill"
                     />
-                {/each}
-
-                {#each layout.lineLabels as lbl}
-                    <rect
-                        x={lbl.x - lbl.width / 2}
-                        y={lbl.y - 12}
-                        width={lbl.width}
-                        height={24}
-                        rx={6}
-                        fill={lbl.color}
-                        stroke="var(--bg-color)"
-                        stroke-width="3"
-                        class="line-badge-rect"
+                    <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r={TERM_R}
+                        class="node-terminal"
                     />
                     <text
-                        x={lbl.x}
-                        y={lbl.y}
+                        x={pt.x}
+                        y={pt.y}
                         dominant-baseline="central"
                         text-anchor="middle"
-                        font-size="11"
-                        font-weight="700"
-                        fill="white"
-                        class="line-badge-text"
+                        class="node-num num-terminal">{pt.stopNumber}</text
                     >
-                        {lbl.name}
+                {:else if pt.isTransfer}
+                    <rect
+                        x={pt.x - XFER_W / 2}
+                        y={pt.y - XFER_H / 2}
+                        width={XFER_W}
+                        height={XFER_H}
+                        rx={XFER_H / 2}
+                        class="node-transfer"
+                        stroke-width="3"
+                    />
+                    <text
+                        x={pt.x}
+                        y={pt.y}
+                        dominant-baseline="central"
+                        text-anchor="middle"
+                        class="node-num num-transfer">{pt.stopNumber}</text
+                    >
+                {:else}
+                    <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r={STOP_R + 3}
+                        class="line-halo-fill"
+                    />
+                    <circle cx={pt.x} cy={pt.y} r={STOP_R} class="node-stop" />
+                    <text
+                        x={pt.x}
+                        y={pt.y}
+                        dominant-baseline="central"
+                        text-anchor="middle"
+                        class="node-num num-stop">{pt.stopNumber}</text
+                    >
+                {/if}
+
+                {#if isTerm || pt.isTransfer}
+                    <text
+                        x={pt.x}
+                        y={pt.y}
+                        class="node-label"
+                        class:term-label={isTerm}
+                        text-anchor={lbl.side === "rotated"
+                            ? "start"
+                            : "middle"}
+                        transform={lbl.side === "above"
+                            ? `translate(0, -${isTerm ? TERM_R + 10 : pt.isTransfer ? XFER_H / 2 + 10 : STOP_R + 12})`
+                            : lbl.side === "below"
+                              ? `translate(0, ${isTerm ? TERM_R + 20 : pt.isTransfer ? XFER_H / 2 + 20 : STOP_R + 20})`
+                              : `translate(${pt.x},${pt.y}) rotate(${lbl.rotate}) translate(${STOP_R + 8}, 4) rotate(${-lbl.rotate}) translate(-${pt.x},-${pt.y})`}
+                    >
+                        {pt.name}
                     </text>
-                {/each}
-
-                {#each layout.pts as pt, i}
-                    {@const isFirst = i === 0}
-                    {@const isLast = i === layout.pts.length - 1}
-                    {@const isTerm = isFirst || isLast}
-                    {@const lbl = labelAngle(i, pt, layout)}
-
-                    {#if isTerm}
-                        <circle
-                            cx={pt.x}
-                            cy={pt.y}
-                            r={TERM_R + 3}
-                            class="line-halo-fill"
-                        />
-                        <circle
-                            cx={pt.x}
-                            cy={pt.y}
-                            r={TERM_R}
-                            class="node-terminal"
-                        />
-                        <text
-                            x={pt.x}
-                            y={pt.y}
-                            dominant-baseline="central"
-                            text-anchor="middle"
-                            class="node-num num-terminal">{pt.stopNumber}</text
-                        >
-                    {:else if pt.isTransfer}
-                        <rect
-                            x={pt.x - XFER_W / 2}
-                            y={pt.y - XFER_H / 2}
-                            width={XFER_W}
-                            height={XFER_H}
-                            rx={XFER_H / 2}
-                            class="node-transfer"
-                            stroke-width="3"
-                        />
-                        <text
-                            x={pt.x}
-                            y={pt.y}
-                            dominant-baseline="central"
-                            text-anchor="middle"
-                            class="node-num num-transfer">{pt.stopNumber}</text
-                        >
-                    {:else}
-                        <circle
-                            cx={pt.x}
-                            cy={pt.y}
-                            r={STOP_R + 3}
-                            class="line-halo-fill"
-                        />
-                        <circle
-                            cx={pt.x}
-                            cy={pt.y}
-                            r={STOP_R}
-                            class="node-stop"
-                        />
-                        <text
-                            x={pt.x}
-                            y={pt.y}
-                            dominant-baseline="central"
-                            text-anchor="middle"
-                            class="node-num num-stop">{pt.stopNumber}</text
-                        >
-                    {/if}
-
-                    {#if isTerm || pt.isTransfer}
-                        <text
-                            x={pt.x}
-                            y={pt.y}
-                            class="node-label"
-                            class:term-label={isTerm}
-                            text-anchor={lbl.side === "rotated"
-                                ? "start"
-                                : "middle"}
-                            transform={lbl.side === "above"
-                                ? `translate(0, -${isTerm ? TERM_R + 10 : pt.isTransfer ? XFER_H / 2 + 10 : STOP_R + 12})`
-                                : lbl.side === "below"
-                                  ? `translate(0, ${isTerm ? TERM_R + 20 : pt.isTransfer ? XFER_H / 2 + 20 : STOP_R + 20})`
-                                  : `translate(${pt.x},${pt.y}) rotate(${lbl.rotate}) translate(${STOP_R + 8}, 4) rotate(${-lbl.rotate}) translate(-${pt.x},-${pt.y})`}
-                        >
-                            {pt.name}
-                        </text>
-                    {/if}
-                {/each}
-            </svg>
-        </div>
-
-        <div class="hint">
-            <span class="desktop-hint">scroll to zoom · drag to pan</span>
-            <span class="mobile-hint">pinch to zoom · swipe to pan</span>
-        </div>
+                {/if}
+            {/each}
+        </svg>
     </div>
 {/if}
 
 <style>
     @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap");
 
+    :global(body) {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #0f111a; /* Fallback to prevent white flashes */
+    }
+
     :root {
         --bg-color: #f4f5f8;
-        --surface-color: #ffffff;
         --border-color: #e2e4e9;
         --text-main: #1a1c29;
-        --text-muted: #6b7280;
         --grid-color: rgba(0, 0, 0, 0.06);
-        --chip-gray: #eef0f3;
         --halo-color: var(--bg-color);
     }
 
     @media (prefers-color-scheme: dark) {
         :root {
             --bg-color: #0f111a;
-            --surface-color: #161925;
             --border-color: #262a3d;
             --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
             --grid-color: rgba(255, 255, 255, 0.05);
-            --chip-gray: #262a3d;
-        }
-    }
-
-    .schema-outer {
-        background: var(--bg-color);
-        border-radius: 16px;
-        overflow: hidden;
-        border: 1px solid var(--border-color);
-        font-family: "DM Sans", system-ui, sans-serif;
-        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
-        width: 100%; /* Ensure it doesn't break out of mobile viewports */
-    }
-
-    .hdr {
-        padding: 16px 20px 14px;
-        border-bottom: 1px solid var(--border-color);
-        background: var(--surface-color);
-    }
-
-    .route-title {
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--text-main);
-        margin-bottom: 10px;
-        letter-spacing: -0.3px;
-    }
-
-    .chips {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-
-    .chip {
-        padding: 4px 12px;
-        border-radius: 99px;
-        font-size: 12px;
-        font-weight: 700;
-        color: #ffffff;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-    .chip.gray {
-        background: var(--chip-gray);
-        color: var(--text-main);
-        box-shadow: none;
-    }
-    .chip.amber {
-        background: #fff3e0;
-        color: #e65100;
-    }
-    @media (prefers-color-scheme: dark) {
-        .chip.amber {
-            background: rgba(230, 81, 0, 0.2);
-            color: #ffb74d;
         }
     }
 
     .canvas {
         overflow: hidden;
-        height: 320px;
+        width: 100vw;
+        height: 100vh;
         background-color: var(--bg-color);
         background-image: radial-gradient(
             var(--grid-color) 1.5px,
@@ -536,6 +437,7 @@
         touch-action: none;
         -webkit-user-select: none;
         user-select: none;
+        font-family: "DM Sans", system-ui, sans-serif;
     }
 
     .canvas svg {
@@ -549,6 +451,7 @@
         stroke-linejoin: round;
         fill: none;
     }
+
     .line-halo-fill {
         fill: var(--halo-color);
     }
@@ -556,10 +459,12 @@
     .node-terminal {
         fill: var(--text-main);
     }
+
     .node-transfer {
         fill: var(--bg-color);
         stroke: var(--text-main);
     }
+
     .node-stop {
         fill: var(--bg-color);
         stroke: var(--border-color);
@@ -571,14 +476,17 @@
         font-weight: 800;
         pointer-events: none;
     }
+
     .num-terminal {
         font-size: 13px;
         fill: var(--bg-color);
     }
+
     .num-transfer {
         font-size: 11px;
         fill: var(--text-main);
     }
+
     .num-stop {
         font-size: 10px;
         fill: var(--text-main);
@@ -594,30 +502,9 @@
         stroke-linecap: round;
         stroke-linejoin: round;
     }
+
     .term-label {
         font-size: 14px;
         font-weight: 700;
-    }
-
-    .hint {
-        text-align: right;
-        font-size: 11px;
-        font-weight: 500;
-        color: var(--text-muted);
-        padding: 6px 16px;
-        background: var(--surface-color);
-        border-top: 1px solid var(--border-color);
-    }
-
-    .mobile-hint {
-        display: none;
-    }
-    @media (hover: none) and (pointer: coarse) {
-        .desktop-hint {
-            display: none;
-        }
-        .mobile-hint {
-            display: inline;
-        }
     }
 </style>
