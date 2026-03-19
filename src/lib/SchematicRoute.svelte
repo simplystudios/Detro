@@ -509,7 +509,7 @@
         --text-inv: #ffffff; /* Always white (for inside dark pills) */
         --term-text: #1a1c29; /* Always dark (for inside light terminal circles) */
         --node-base: #1a1c29; /* Always dark (standard/transfer fill) */
-        --node-highlight: #e2e4e9; /* Always light gray (terminal fill & transfer border) */
+        --node-highlight: darkgray; /* Always light gray (terminal fill & transfer border) */
 
         --grid-color: rgba(0, 0, 0, 0.08);
     }
@@ -525,6 +525,8 @@
             --node-base: #161925;
 
             --grid-color: rgba(255, 255, 255, 0.05);
+            --text-inv: black;
+            --node-highlight: #e2e4e9;
             /* --text-inv, --term-text, and --node-highlight remain untouched! */
         }
     }
