@@ -503,6 +503,7 @@
     :root {
         /* These flip based on theme */ /* Station labels are Dark in light mode */
         --text-main: #f3f4f6;
+        --text-sec: #1a1c29;
         --border-color: #1a1c29; /* Standard stop border is Dark in light mode */
 
         /* These NEVER flip because the node backgrounds are consistent */
@@ -519,6 +520,7 @@
         :root {
             /* Flips to light for dark backgrounds */
             --text-main: #1a1c29; /* Station labels are Light in dark mode */
+            --text-sec: #f3f4f6;
             --border-color: #3b4054; /* Standard stop border becomes lighter gray to stand out */
 
             /* Node base shifts slightly to match dark themes better, but stays dark */
