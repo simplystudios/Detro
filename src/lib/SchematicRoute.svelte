@@ -189,6 +189,12 @@
         setTimeout(() => {
             isAnimating = false;
         }, 400);
+
+        // 👇 NEW: Send the station name to Android!
+        // We check if "AndroidBridge" exists so the app doesn't crash if opened in a normal browser
+        if (window.AndroidBridge && window.AndroidBridge.onStationChanged) {
+            window.AndroidBridge.onStationChanged(pt.name);
+        }
     }
 
     onMount(() => {
