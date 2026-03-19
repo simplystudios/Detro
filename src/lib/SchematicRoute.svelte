@@ -443,7 +443,7 @@
                         dominant-baseline="central"
                         text-anchor="middle"
                         class="node-num num-transfer"
-                        fill="var(--text-main)">{pt.stopNumber}</text
+                        fill="var(--text-sec)">{pt.stopNumber}</text
                     >
                 {:else}
                     <circle
@@ -460,7 +460,7 @@
                         dominant-baseline="central"
                         text-anchor="middle"
                         class="node-num num-stop"
-                        fill="var(--text-main)">{pt.stopNumber}</text
+                        fill="var(--text-sec)">{pt.stopNumber}</text
                     >
                 {/if}
 
@@ -469,7 +469,7 @@
                         x={pt.x}
                         y={pt.y}
                         class="node-label"
-                        fill="var(--text-main)"
+                        fill="var(--text-sec)"
                         font-size={isTerm ? "14" : "12"}
                         font-weight={isTerm ? "700" : "600"}
                         text-anchor={lbl.side === "rotated"
