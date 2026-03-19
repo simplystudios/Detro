@@ -19,7 +19,6 @@
         "Rapid Metro": "#283593",
     };
 
-    // Tweaked proportions to match Image 2 perfectly
     const TRACK_W = 10;
     const STOP_R = 9;
     const TERM_R = 14;
@@ -333,31 +332,41 @@
 
                     {#each layout.lineLabels as lbl}
                         <rect
-                            x={lbl.x - lbl.width / 2 - 3}
-                            y={lbl.y - 15}
-                            width={lbl.width + 6}
-                            height={30}
-                            rx={8}
+                            x={lbl.x - lbl.width / 2 - 4}
+                            y={lbl.y - 16}
+                            width={lbl.width + 8}
+                            height={32}
+                            rx={12}
                             fill="black"
                         />
                     {/each}
 
                     {#each layout.pts as pt, i}
-                        {@const isTerm = i === 0 || i === layout.pts.length - 1}
+                        {@const isFirst = i === 0}
+                        {@const isLast = i === layout.pts.length - 1}
+                        {@const isTerm = isFirst || isLast}
+
                         {#if isTerm}
                             <circle
                                 cx={pt.x}
                                 cy={pt.y}
-                                r={TERM_R + 3}
+                                r={TERM_R + 4}
                                 fill="black"
                             />
                         {:else if pt.isTransfer}
                             <rect
-                                x={pt.x - XFER_W / 2 - 3}
-                                y={pt.y - XFER_H / 2 - 3}
-                                width={XFER_W + 6}
-                                height={XFER_H + 6}
-                                rx={(XFER_H + 6) / 2}
+                                x={pt.x - XFER_W / 2 - 4}
+                                y={pt.y - XFER_H / 2 - 4}
+                                width={XFER_W + 8}
+                                height={XFER_H + 8}
+                                rx={(XFER_H + 8) / 2}
+                                fill="black"
+                            />
+                        {:else}
+                            <circle
+                                cx={pt.x}
+                                cy={pt.y}
+                                r={STOP_R + 4}
                                 fill="black"
                             />
                         {/if}
@@ -424,7 +433,7 @@
                         width={XFER_W}
                         height={XFER_H}
                         rx={XFER_H / 2}
-                        fill="var(--node-base)"
+                        fill="var(--node-bg)"
                         stroke="var(--node-highlight)"
                         stroke-width="2"
                     />
@@ -441,7 +450,9 @@
                         cx={pt.x}
                         cy={pt.y}
                         r={STOP_R}
-                        fill="var(--node-base)"
+                        fill="var(--node-bg)"
+                        stroke="var(--border-color)"
+                        stroke-width="2"
                     />
                     <text
                         x={pt.x}
@@ -458,6 +469,7 @@
                         x={pt.x}
                         y={pt.y}
                         class="node-label"
+                        fill="var(--text-main)"
                         font-size={isTerm ? "14" : "12"}
                         font-weight={isTerm ? "700" : "600"}
                         text-anchor={lbl.side === "rotated"
@@ -487,22 +499,33 @@
         background-color: transparent !important;
     }
 
-    /* Colors carefully mapped to match Image 2 regardless of background */
+    /* LIGHT MODE DEFAULTS */
     :root {
-        --text-main: #1a1c29; /* Dark text / Standard node color */
-        --text-inv: #f3f4f6; /* Light text / Terminal node color */
-        --node-base: #1a1c29;
-        --node-highlight: #e2e4e9;
+        /* These flip based on theme */
+        --text-main: #1a1c29; /* Station labels are Dark in light mode */
+        --border-color: #1a1c29; /* Standard stop border is Dark in light mode */
+
+        /* These NEVER flip because the node backgrounds are consistent */
+        --text-inv: #ffffff; /* Always white (for inside dark pills) */
+        --term-text: #1a1c29; /* Always dark (for inside light terminal circles) */
+        --node-base: #1a1c29; /* Always dark (standard/transfer fill) */
+        --node-highlight: #e2e4e9; /* Always light gray (terminal fill & transfer border) */
+
         --grid-color: rgba(0, 0, 0, 0.08);
     }
 
+    /* DARK MODE OVERRIDES */
     @media (prefers-color-scheme: dark) {
         :root {
-            --text-main: #f3f4f6; /* Light text / Standard node color */
-            --text-inv: #1a1c29; /* Dark text / Terminal node color */
+            /* Flips to light for dark backgrounds */
+            --text-main: #f3f4f6; /* Station labels are Light in dark mode */
+            --border-color: #3b4054; /* Standard stop border becomes lighter gray to stand out */
+
+            /* Node base shifts slightly to match dark themes better, but stays dark */
             --node-base: #161925;
-            --node-highlight: #e2e4e9;
+
             --grid-color: rgba(255, 255, 255, 0.05);
+            /* --text-inv, --term-text, and --node-highlight remain untouched! */
         }
     }
 
@@ -543,8 +566,7 @@
         font-size: 10px;
     }
 
-    /* The ugly thick stroke is completely gone */
     .node-label {
-        fill: var(--text-main);
+        paint-order: stroke fill;
     }
 </style>
