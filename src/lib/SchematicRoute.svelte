@@ -1,4 +1,6 @@
 <script>
+    import { onMount } from "svelte";
+
     export let route = null;
 
     const LINE_COLORS = {
@@ -63,12 +65,21 @@
             y = PAD_Y;
 
         for (let i = 0; i < n; i++) {
+            // Find the color of the line passing through this node for the text color
+            let ptColor = "#555";
+            if (i < n - 1) {
+                ptColor = LINE_COLORS[segLines[i]] ?? "#555";
+            } else if (i > 0) {
+                ptColor = LINE_COLORS[segLines[i - 1]] ?? "#555";
+            }
+
             pts.push({
                 x,
                 y,
                 name: names[i],
                 isTransfer: transfers.has(names[i]),
                 stopNumber: i + 1,
+                color: ptColor,
             });
             if (i < n - 1) {
                 const lineChange = i > 0 && segLines[i] !== segLines[i - 1];
@@ -85,7 +96,6 @@
             const dy = b.y - a.y;
             const dx = b.x - a.x;
 
-            // THE FIX: Backticks added here!
             let d =
                 Math.abs(dy) < 2
                     ? `M${a.x} ${a.y} L${b.x} ${b.y}`
@@ -155,7 +165,9 @@
         ty = 0;
     let lastCenteredRoute = "";
 
-    // Auto-Center Trigger
+    let isAnimating = false;
+    let currentStationIndex = 0;
+
     $: if (layout && canvasW && canvasH) {
         const currentRouteKey =
             route?.route?.[0]?.station +
@@ -170,9 +182,42 @@
             tx = (canvasW - layout.svgW * scale) / 2;
             ty = (canvasH - layout.svgH * scale) / 2;
 
+            currentStationIndex = 0;
             lastCenteredRoute = currentRouteKey;
         }
     }
+
+    function centerOnStation(index) {
+        if (!layout || !layout.pts[index] || canvasW === 0 || canvasH === 0)
+            return;
+        const pt = layout.pts[index];
+
+        scale = 1.6;
+        initialScale = scale;
+
+        tx = canvasW / 2 - pt.x * scale;
+        ty = canvasH / 2 - pt.y * scale;
+
+        isAnimating = true;
+        setTimeout(() => {
+            isAnimating = false;
+        }, 400);
+    }
+
+    onMount(() => {
+        window.nextStation = () => {
+            if (layout && currentStationIndex < layout.pts.length - 1) {
+                currentStationIndex++;
+                centerOnStation(currentStationIndex);
+            }
+        };
+        window.prevStation = () => {
+            if (layout && currentStationIndex > 0) {
+                currentStationIndex--;
+                centerOnStation(currentStationIndex);
+            }
+        };
+    });
 
     let panning = false;
     let sx = 0,
@@ -183,6 +228,7 @@
     let initialScale = 1;
 
     function onWheel(e) {
+        isAnimating = false;
         e.preventDefault();
         const rect = e.currentTarget.getBoundingClientRect();
         const mx = e.clientX - rect.left,
@@ -194,6 +240,7 @@
         scale = ns;
     }
     function onMD(e) {
+        isAnimating = false;
         if (e.button !== 0) return;
         panning = true;
         sx = e.clientX;
@@ -214,6 +261,7 @@
     }
 
     function onTS(e) {
+        isAnimating = false;
         if (e.touches.length === 2) {
             initialDist = getTouchDist(e.touches[0], e.touches[1]);
             initialScale = scale;
@@ -267,7 +315,9 @@
         style="cursor:{panning
             ? 'grabbing'
             : 'grab'}; background-position: {tx}px {ty}px; background-size: {24 *
-            scale}px {24 * scale}px;"
+            scale}px {24 * scale}px; transition: {isAnimating
+            ? 'background-position 0.4s ease-out, background-size 0.4s ease-out'
+            : 'none'};"
         on:wheel={onWheel}
         on:mousedown={onMD}
         on:mousemove={onMM}
@@ -283,37 +333,70 @@
             width={layout.svgW}
             height={layout.svgH}
             viewBox="0 0 {layout.svgW} {layout.svgH}"
-            style="display:block; transform-origin:0 0; transform:translate({tx}px,{ty}px) scale({scale}); transition: none;"
+            style="display:block; transform-origin:0 0; transform:translate({tx}px,{ty}px) scale({scale}); transition: {isAnimating
+                ? 'transform 0.4s ease-out'
+                : 'none'};"
         >
             <defs>
-                {#each layout.pts as pt, i}
-                    {#if i === 0 || i === layout.pts.length - 1}
-                        <mask id="term-mask-{i}">
-                            <rect width="100%" height="100%" fill="white" />
-                            <text
-                                x={pt.x}
-                                y={pt.y}
-                                dominant-baseline="central"
-                                text-anchor="middle"
-                                font-size="13"
-                                font-weight="800"
-                                fill="black">{pt.stopNumber}</text
-                            >
-                        </mask>
-                    {/if}
-                {/each}
+                <mask id="track-cutout">
+                    <rect width="100%" height="100%" fill="white" />
+
+                    {#each layout.lineLabels as lbl}
+                        <rect
+                            x={lbl.x - lbl.width / 2 - 4}
+                            y={lbl.y - 16}
+                            width={lbl.width + 8}
+                            height={32}
+                            rx={10}
+                            fill="black"
+                        />
+                    {/each}
+
+                    {#each layout.pts as pt, i}
+                        {@const isFirst = i === 0}
+                        {@const isLast = i === layout.pts.length - 1}
+                        {@const isTerm = isFirst || isLast}
+
+                        {#if isTerm}
+                            <circle
+                                cx={pt.x}
+                                cy={pt.y}
+                                r={TERM_R + 4}
+                                fill="black"
+                            />
+                        {:else if pt.isTransfer}
+                            <rect
+                                x={pt.x - XFER_W / 2 - 4}
+                                y={pt.y - XFER_H / 2 - 4}
+                                width={XFER_W + 8}
+                                height={XFER_H + 8}
+                                rx={(XFER_H + 8) / 2}
+                                fill="black"
+                            />
+                        {:else}
+                            <circle
+                                cx={pt.x}
+                                cy={pt.y}
+                                r={STOP_R + 4}
+                                fill="black"
+                            />
+                        {/if}
+                    {/each}
+                </mask>
             </defs>
 
-            {#each layout.segs as seg}
-                <path
-                    d={seg.d}
-                    stroke={seg.color}
-                    stroke-width={TRACK_W}
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    fill="none"
-                />
-            {/each}
+            <g mask="url(#track-cutout)">
+                {#each layout.segs as seg}
+                    <path
+                        d={seg.d}
+                        stroke={seg.color}
+                        stroke-width={TRACK_W}
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        fill="none"
+                    />
+                {/each}
+            </g>
 
             {#each layout.lineLabels as lbl}
                 <rect
@@ -348,9 +431,16 @@
                         cx={pt.x}
                         cy={pt.y}
                         r={TERM_R}
-                        fill="var(--text-main)"
-                        mask="url(#term-mask-{i})"
+                        fill="var(--node-bg)"
                     />
+                    <text
+                        x={pt.x}
+                        y={pt.y}
+                        dominant-baseline="central"
+                        text-anchor="middle"
+                        class="node-num num-terminal"
+                        fill={pt.color}>{pt.stopNumber}</text
+                    >
                 {:else if pt.isTransfer}
                     <rect
                         x={pt.x - XFER_W / 2}
@@ -358,38 +448,30 @@
                         width={XFER_W}
                         height={XFER_H}
                         rx={XFER_H / 2}
-                        fill="transparent"
-                        stroke="var(--text-main)"
-                        stroke-width="3"
+                        fill="var(--node-bg)"
                     />
                     <text
                         x={pt.x}
                         y={pt.y}
                         dominant-baseline="central"
                         text-anchor="middle"
-                        font-size="11"
-                        font-weight="800"
-                        fill="var(--text-main)"
-                        style="pointer-events: none;">{pt.stopNumber}</text
+                        class="node-num num-transfer"
+                        fill={pt.color}>{pt.stopNumber}</text
                     >
                 {:else}
                     <circle
                         cx={pt.x}
                         cy={pt.y}
                         r={STOP_R}
-                        fill="transparent"
-                        stroke="var(--border-color)"
-                        stroke-width="2"
+                        fill="var(--node-bg)"
                     />
                     <text
                         x={pt.x}
                         y={pt.y}
                         dominant-baseline="central"
                         text-anchor="middle"
-                        font-size="10"
-                        font-weight="800"
-                        fill="var(--text-main)"
-                        style="pointer-events: none;">{pt.stopNumber}</text
+                        class="node-num num-stop"
+                        fill="var(--text-main)">{pt.stopNumber}</text
                     >
                 {/if}
 
@@ -429,7 +511,7 @@
 
     :root {
         --text-main: #1a1c29;
-        --border-color: #6b7280;
+        --node-bg: #ffffff;
         --grid-color: rgba(0, 0, 0, 0.08);
         --label-halo: rgba(255, 255, 255, 0.9);
     }
@@ -437,9 +519,9 @@
     @media (prefers-color-scheme: dark) {
         :root {
             --text-main: #f3f4f6;
-            --border-color: #9ca3af;
+            --node-bg: #2a2d3e; /* Sleek, dark surface color for the flat pills */
             --grid-color: rgba(255, 255, 255, 0.05);
-            --label-halo: #171413;
+            --label-halo: #171413; /* Text halo cutout */
         }
     }
 
@@ -462,6 +544,22 @@
     .canvas svg {
         will-change: transform;
         user-select: none;
+    }
+
+    .node-num {
+        font-family: "DM Sans", system-ui, sans-serif;
+        font-weight: 800;
+        pointer-events: none;
+    }
+
+    .num-terminal {
+        font-size: 14px;
+    }
+    .num-transfer {
+        font-size: 11px;
+    }
+    .num-stop {
+        font-size: 10px;
     }
 
     .node-label {
