@@ -65,12 +65,20 @@
             y = PAD_Y;
 
         for (let i = 0; i < n; i++) {
+            let ptColor = "#555";
+            if (i < n - 1) {
+                ptColor = LINE_COLORS[segLines[i]] ?? "#555";
+            } else if (i > 0) {
+                ptColor = LINE_COLORS[segLines[i - 1]] ?? "#555";
+            }
+
             pts.push({
                 x,
                 y,
                 name: names[i],
                 isTransfer: transfers.has(names[i]),
                 stopNumber: i + 1,
+                color: ptColor,
             });
             if (i < n - 1) {
                 const lineChange = i > 0 && segLines[i] !== segLines[i - 1];
@@ -159,6 +167,10 @@
     let isAnimating = false;
     let currentStationIndex = 0;
 
+    // ================= DEV TOOLS STATE START =================
+    let devFocusScale = 1.0;
+    // =========================================================
+
     $: if (layout && canvasW && canvasH) {
         const currentRouteKey =
             route?.route?.[0]?.station +
@@ -169,7 +181,7 @@
             currentStationIndex = 0;
             setTimeout(() => {
                 centerOnStation(0);
-            }, 50); // Center on start
+            }, 50);
             lastCenteredRoute = currentRouteKey;
         }
     }
@@ -179,7 +191,7 @@
             return;
         const pt = layout.pts[index];
 
-        scale = 1;
+        scale = devFocusScale;
         initialScale = scale;
 
         tx = canvasW / 2 - pt.x * scale;
@@ -190,26 +202,28 @@
             isAnimating = false;
         }, 400);
 
-        // 👇 NEW: Send the station name to Android!
-        // We check if "AndroidBridge" exists so the app doesn't crash if opened in a normal browser
         if (window.AndroidBridge && window.AndroidBridge.onStationChanged) {
             window.AndroidBridge.onStationChanged(pt.name);
         }
     }
 
+    function nextStationLocal() {
+        if (layout && currentStationIndex < layout.pts.length - 1) {
+            currentStationIndex++;
+            centerOnStation(currentStationIndex);
+        }
+    }
+
+    function prevStationLocal() {
+        if (layout && currentStationIndex > 0) {
+            currentStationIndex--;
+            centerOnStation(currentStationIndex);
+        }
+    }
+
     onMount(() => {
-        window.nextStation = () => {
-            if (layout && currentStationIndex < layout.pts.length - 1) {
-                currentStationIndex++;
-                centerOnStation(currentStationIndex);
-            }
-        };
-        window.prevStation = () => {
-            if (layout && currentStationIndex > 0) {
-                currentStationIndex--;
-                centerOnStation(currentStationIndex);
-            }
-        };
+        window.nextStation = nextStationLocal;
+        window.prevStation = prevStationLocal;
     });
 
     let panning = false;
@@ -430,7 +444,7 @@
                         dominant-baseline="central"
                         text-anchor="middle"
                         class="node-num num-terminal"
-                        fill="var(--text-inv)">{pt.stopNumber}</text
+                        fill="var(--term-text)">{pt.stopNumber}</text
                     >
                 {:else if pt.isTransfer}
                     <rect
@@ -439,7 +453,7 @@
                         width={XFER_W}
                         height={XFER_H}
                         rx={XFER_H / 2}
-                        fill="var(--node-bg)"
+                        fill="var(--node-base)"
                         stroke="var(--node-highlight)"
                         stroke-width="2"
                     />
@@ -449,14 +463,14 @@
                         dominant-baseline="central"
                         text-anchor="middle"
                         class="node-num num-transfer"
-                        fill="var(--text-sec)">{pt.stopNumber}</text
+                        fill="var(--text-inv)">{pt.stopNumber}</text
                     >
                 {:else}
                     <circle
                         cx={pt.x}
                         cy={pt.y}
                         r={STOP_R}
-                        fill="var(--node-bg)"
+                        fill="var(--node-base)"
                         stroke="var(--border-color)"
                         stroke-width="2"
                     />
@@ -466,7 +480,7 @@
                         dominant-baseline="central"
                         text-anchor="middle"
                         class="node-num num-stop"
-                        fill="var(--text-sec)">{pt.stopNumber}</text
+                        fill="var(--text-inv)">{pt.stopNumber}</text
                     >
                 {/if}
 
@@ -475,7 +489,7 @@
                         x={pt.x}
                         y={pt.y}
                         class="node-label"
-                        fill="var(--text-sec)"
+                        fill="var(--text-main)"
                         font-size={isTerm ? "14" : "12"}
                         font-weight={isTerm ? "700" : "600"}
                         text-anchor={lbl.side === "rotated"
@@ -491,7 +505,47 @@
                     </text>
                 {/if}
             {/each}
+
+            {#if layout.pts[currentStationIndex]}
+                {@const activePt = layout.pts[currentStationIndex]}
+                <g transform="translate({activePt.x}, {activePt.y})">
+                    <path
+                        class="goofy-arrow"
+                        d="M 0 -22 L 12 -36 L 6 -36 L 6 -50 L -6 -50 L -6 -36 L -12 -36 Z"
+                        fill="#FFEB3B"
+                        stroke="var(--border-color)"
+                        stroke-width="3"
+                        stroke-linejoin="round"
+                    />
+                </g>
+            {/if}
         </svg>
+
+        <div
+            class="dev-panel"
+            on:mousedown|stopPropagation
+            on:touchstart|stopPropagation
+        >
+            <b>Dev Tools</b>
+            <label>
+                Focus Zoom: {devFocusScale.toFixed(2)}x
+                <input
+                    type="range"
+                    min="0.3"
+                    max="3"
+                    step="0.1"
+                    bind:value={devFocusScale}
+                    on:input={() => centerOnStation(currentStationIndex)}
+                />
+            </label>
+            <div class="dev-buttons">
+                <button on:click={prevStationLocal}>Prev</button>
+                <button on:click={nextStationLocal}>Next</button>
+            </div>
+            <p style="font-size: 10px; margin-top: 2px;">
+                (Delete this block before building the APK)
+            </p>
+        </div>
     </div>
 {/if}
 
@@ -505,38 +559,24 @@
         background-color: transparent !important;
     }
 
-    /* LIGHT MODE DEFAULTS */
     :root {
-        /* These flip based on theme */ /* Station labels are Dark in light mode */
-        --text-main: #f3f4f6;
-        --text-sec: #1a1c29;
-        --border-color: #1a1c29; /* Standard stop border is Dark in light mode */
+        --text-main: #1a1c29;
+        --border-color: #1a1c29;
 
-        /* These NEVER flip because the node backgrounds are consistent */
-        --text-inv: #ffffff; /* Always white (for inside dark pills) */
-        --term-text: #1a1c29; /* Always dark (for inside light terminal circles) */
-        --node-base: #1a1c29; /* Always dark (standard/transfer fill) */
-        --node-highlight: #2b2d42; /* Always light gray (terminal fill & transfer border) */
+        --text-inv: #ffffff;
+        --term-text: #1a1c29;
+        --node-base: #1a1c29;
+        --node-highlight: #e2e4e9;
 
         --grid-color: rgba(0, 0, 0, 0.08);
     }
 
-    /* DARK MODE OVERRIDES */
     @media (prefers-color-scheme: dark) {
         :root {
-            /* Flips to light for dark backgrounds */
-            --text-main: #1a1c29; /* Station labels are Light in dark mode */
-            --text-sec: #f3f4f6;
-            --border-color: #3b4054; /* Standard stop border becomes lighter gray to stand out */
-
-            /* Node base shifts slightly to match dark themes better, but stays dark */
+            --text-main: #f3f4f6;
+            --border-color: #3b4054;
             --node-base: #161925;
-            --node-base: #161925;
-
             --grid-color: rgba(255, 255, 255, 0.05);
-            --text-inv: black;
-            --node-highlight: #e2e4e9;
-            /* --text-inv, --term-text, and --node-highlight remain untouched! */
         }
     }
 
@@ -580,4 +620,65 @@
     .node-label {
         paint-order: stroke fill;
     }
+
+    /* 👇 CSS ANIMATION FOR THE GOOFY ARROW 👇 */
+    @keyframes bop {
+        0% {
+            transform: translateY(0px);
+        }
+        100% {
+            transform: translateY(-12px);
+        }
+    }
+
+    .goofy-arrow {
+        animation: bop 0.4s infinite alternate
+            cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    /* 👆 CSS ANIMATION FOR THE GOOFY ARROW 👆 */
+
+    /* ================= DEV TOOLS CSS START (DELETE LATER) ================= */
+    .dev-panel {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.8);
+        color: #0f0;
+        padding: 12px;
+        border-radius: 8px;
+        border: 2px solid #0f0;
+        z-index: 9999;
+        font-family: monospace;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        backdrop-filter: blur(4px);
+    }
+    .dev-panel label {
+        display: flex;
+        flex-direction: column;
+        font-size: 12px;
+        gap: 4px;
+    }
+    .dev-panel input {
+        cursor: pointer;
+    }
+    .dev-buttons {
+        display: flex;
+        gap: 8px;
+    }
+    .dev-buttons button {
+        background: #0f0;
+        color: #000;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        flex: 1;
+    }
+    .dev-buttons button:active {
+        background: #0b0;
+    }
+    /* ================= DEV TOOLS CSS END ================================== */
 </style>
