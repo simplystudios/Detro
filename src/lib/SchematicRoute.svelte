@@ -19,12 +19,12 @@
         "Rapid Metro": "#283593",
     };
 
-    const TRACK_W = 12;
-    const HALO_W = TRACK_W + 8;
-    const STOP_R = 10;
-    const TERM_R = 15;
-    const XFER_W = 32;
-    const XFER_H = 20;
+    // Tweaked proportions to match Image 2 perfectly
+    const TRACK_W = 10;
+    const STOP_R = 9;
+    const TERM_R = 14;
+    const XFER_W = 30;
+    const XFER_H = 18;
     const V_SHIFT = 64;
     const PAD_X = 80;
     const PAD_Y = 100;
@@ -66,20 +66,12 @@
             y = PAD_Y;
 
         for (let i = 0; i < n; i++) {
-            let ptColor = "#555";
-            if (i < n - 1) {
-                ptColor = LINE_COLORS[segLines[i]] ?? "#555";
-            } else if (i > 0) {
-                ptColor = LINE_COLORS[segLines[i - 1]] ?? "#555";
-            }
-
             pts.push({
                 x,
                 y,
                 name: names[i],
                 isTransfer: transfers.has(names[i]),
                 stopNumber: i + 1,
-                color: ptColor,
             });
             if (i < n - 1) {
                 const lineChange = i > 0 && segLines[i] !== segLines[i - 1];
@@ -168,7 +160,6 @@
     let isAnimating = false;
     let currentStationIndex = 0;
 
-    // Trigger on load: center on the VERY FIRST station
     $: if (layout && canvasW && canvasH) {
         const currentRouteKey =
             route?.route?.[0]?.station +
@@ -177,7 +168,9 @@
 
         if (lastCenteredRoute !== currentRouteKey) {
             currentStationIndex = 0;
-            centerOnStation(0); // Snap to start immediately
+            setTimeout(() => {
+                centerOnStation(0);
+            }, 50); // Center on start
             lastCenteredRoute = currentRouteKey;
         }
     }
@@ -187,7 +180,7 @@
             return;
         const pt = layout.pts[index];
 
-        scale = 1.6; // Keep a zoomed-in focus
+        scale = 1.6;
         initialScale = scale;
 
         tx = canvasW / 2 - pt.x * scale;
@@ -295,8 +288,10 @@
         const dx = (next?.x ?? pt.x) - (prev?.x ?? pt.x);
         const dy = (next?.y ?? pt.y) - (prev?.y ?? pt.y);
         if (Math.abs(dy) > 8) {
-            const angle = (Math.atan2(dy, dx) * 180) / Math.PI - 90;
-            return { side: "rotated", rotate: angle };
+            return {
+                side: "rotated",
+                rotate: (Math.atan2(dy, dx) * 180) / Math.PI - 90,
+            };
         }
         return { side: i % 2 === 0 ? "above" : "below", rotate: 0 };
     }
@@ -332,27 +327,56 @@
                 ? 'transform 0.4s ease-out'
                 : 'none'};"
         >
-            {#each layout.segs as seg}
-                <path
-                    d={seg.d}
-                    stroke="var(--halo-color)"
-                    stroke-width={HALO_W}
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    fill="none"
-                />
-            {/each}
+            <defs>
+                <mask id="track-cutout">
+                    <rect width="100%" height="100%" fill="white" />
 
-            {#each layout.segs as seg}
-                <path
-                    d={seg.d}
-                    stroke={seg.color}
-                    stroke-width={TRACK_W}
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    fill="none"
-                />
-            {/each}
+                    {#each layout.lineLabels as lbl}
+                        <rect
+                            x={lbl.x - lbl.width / 2 - 3}
+                            y={lbl.y - 15}
+                            width={lbl.width + 6}
+                            height={30}
+                            rx={8}
+                            fill="black"
+                        />
+                    {/each}
+
+                    {#each layout.pts as pt, i}
+                        {@const isTerm = i === 0 || i === layout.pts.length - 1}
+                        {#if isTerm}
+                            <circle
+                                cx={pt.x}
+                                cy={pt.y}
+                                r={TERM_R + 3}
+                                fill="black"
+                            />
+                        {:else if pt.isTransfer}
+                            <rect
+                                x={pt.x - XFER_W / 2 - 3}
+                                y={pt.y - XFER_H / 2 - 3}
+                                width={XFER_W + 6}
+                                height={XFER_H + 6}
+                                rx={(XFER_H + 6) / 2}
+                                fill="black"
+                            />
+                        {/if}
+                    {/each}
+                </mask>
+            </defs>
+
+            <g mask="url(#track-cutout)">
+                {#each layout.segs as seg}
+                    <path
+                        d={seg.d}
+                        stroke={seg.color}
+                        stroke-width={TRACK_W}
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        fill="none"
+                    />
+                {/each}
+            </g>
 
             {#each layout.lineLabels as lbl}
                 <rect
@@ -360,10 +384,8 @@
                     y={lbl.y - 12}
                     width={lbl.width}
                     height={24}
-                    rx={12}
+                    rx={6}
                     fill={lbl.color}
-                    stroke="var(--halo-color)"
-                    stroke-width="3"
                 />
                 <text
                     x={lbl.x}
@@ -372,32 +394,20 @@
                     text-anchor="middle"
                     font-size="11"
                     font-weight="700"
-                    fill="white"
+                    fill="white">{lbl.name}</text
                 >
-                    {lbl.name}
-                </text>
             {/each}
 
             {#each layout.pts as pt, i}
-                {@const isFirst = i === 0}
-                {@const isLast = i === layout.pts.length - 1}
-                {@const isTerm = isFirst || isLast}
+                {@const isTerm = i === 0 || i === layout.pts.length - 1}
                 {@const lbl = labelAngle(i, pt, layout)}
 
                 {#if isTerm}
                     <circle
                         cx={pt.x}
                         cy={pt.y}
-                        r={TERM_R + 3}
-                        fill="var(--halo-color)"
-                    />
-                    <circle
-                        cx={pt.x}
-                        cy={pt.y}
                         r={TERM_R}
-                        fill="var(--node-bg)"
-                        stroke="var(--text-main)"
-                        stroke-width="2.5"
+                        fill="var(--node-highlight)"
                     />
                     <text
                         x={pt.x}
@@ -405,25 +415,17 @@
                         dominant-baseline="central"
                         text-anchor="middle"
                         class="node-num num-terminal"
-                        fill="var(--text-main)">{pt.stopNumber}</text
+                        fill="var(--text-inv)">{pt.stopNumber}</text
                     >
                 {:else if pt.isTransfer}
-                    <rect
-                        x={pt.x - XFER_W / 2 - 3}
-                        y={pt.y - XFER_H / 2 - 3}
-                        width={XFER_W + 6}
-                        height={XFER_H + 6}
-                        rx={(XFER_H + 6) / 2}
-                        fill="var(--halo-color)"
-                    />
                     <rect
                         x={pt.x - XFER_W / 2}
                         y={pt.y - XFER_H / 2}
                         width={XFER_W}
                         height={XFER_H}
                         rx={XFER_H / 2}
-                        fill="var(--node-bg)"
-                        stroke="var(--text-main)"
+                        fill="var(--node-base)"
+                        stroke="var(--node-highlight)"
                         stroke-width="2"
                     />
                     <text
@@ -438,16 +440,8 @@
                     <circle
                         cx={pt.x}
                         cy={pt.y}
-                        r={STOP_R + 3}
-                        fill="var(--halo-color)"
-                    />
-                    <circle
-                        cx={pt.x}
-                        cy={pt.y}
                         r={STOP_R}
-                        fill="var(--node-bg)"
-                        stroke="var(--text-main)"
-                        stroke-width="1.5"
+                        fill="var(--node-base)"
                     />
                     <text
                         x={pt.x}
@@ -493,19 +487,22 @@
         background-color: transparent !important;
     }
 
+    /* Colors carefully mapped to match Image 2 regardless of background */
     :root {
-        --text-main: #1a1c29;
-        --node-bg: #ffffff;
+        --text-main: #1a1c29; /* Dark text / Standard node color */
+        --text-inv: #f3f4f6; /* Light text / Terminal node color */
+        --node-base: #1a1c29;
+        --node-highlight: #e2e4e9;
         --grid-color: rgba(0, 0, 0, 0.08);
-        --halo-color: #f4f5f8; /* Needs to match light mode BG */
     }
 
     @media (prefers-color-scheme: dark) {
         :root {
-            --text-main: #f3f4f6;
-            --node-bg: #171413; /* Exact Sketchware BG */
+            --text-main: #f3f4f6; /* Light text / Standard node color */
+            --text-inv: #1a1c29; /* Dark text / Terminal node color */
+            --node-base: #161925;
+            --node-highlight: #e2e4e9;
             --grid-color: rgba(255, 255, 255, 0.05);
-            --halo-color: #171413; /* Exact Sketchware BG to make halos invisible */
         }
     }
 
@@ -546,12 +543,8 @@
         font-size: 10px;
     }
 
+    /* The ugly thick stroke is completely gone */
     .node-label {
         fill: var(--text-main);
-        paint-order: stroke fill;
-        stroke: var(--halo-color); /* Label text gets a halo too */
-        stroke-width: 4px;
-        stroke-linecap: round;
-        stroke-linejoin: round;
     }
 </style>
