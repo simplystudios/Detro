@@ -18,7 +18,6 @@
     };
 
     const TRACK_W = 12;
-    const HALO_W = TRACK_W + 8;
     const STOP_R = 10;
     const TERM_R = 15;
     const XFER_W = 32;
@@ -26,10 +25,6 @@
     const V_SHIFT = 64;
     const PAD_X = 80;
     const PAD_Y = 100;
-
-    const ICON_HOME = "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z";
-    const ICON_WORK =
-        "M4 21h1.5V15.7c1-.7 2.5-1.2 3.5-1.2 3 0 5 3 9 1V5c-4 2-6-.5-9-.5-1.5 0-3 .5-4 1.5V4H4v17z";
 
     $: layout = (() => {
         if (!route?.route?.length) return null;
@@ -90,18 +85,12 @@
             const dy = b.y - a.y;
             const dx = b.x - a.x;
 
-            let d;
-            if (Math.abs(dy) < 2) {
-                d = `M${a.x} ${a.y} L${b.x} ${b.y}`;
-            } else {
-                const hLen = dx - Math.abs(dy);
-                const elbowX = a.x + hLen;
-                if (hLen > 0) {
-                    d = `M${a.x} ${a.y} L${elbowX} ${a.y} L${b.x} ${b.y}`;
-                } else {
-                    d = `M${a.x} ${a.y} L${b.x} ${b.y}`;
-                }
-            }
+            // THE FIX: Backticks added here!
+            let d =
+                Math.abs(dy) < 2
+                    ? `M${a.x} ${a.y} L${b.x} ${b.y}`
+                    : `M${a.x} ${a.y} L${a.x + (dx - Math.abs(dy))} ${a.y} L${b.x} ${b.y}`;
+
             segs.push({ d, color, fromIdx: i, toIdx: i + 1 });
         }
 
@@ -158,15 +147,38 @@
         };
     })();
 
+    // ── INTERACTIVITY & CENTERING LOGIC ──
+    let canvasW = 0;
+    let canvasH = 0;
     let scale = 1;
     let tx = 0,
         ty = 0;
+    let lastCenteredRoute = "";
+
+    // Auto-Center Trigger
+    $: if (layout && canvasW && canvasH) {
+        const currentRouteKey =
+            route?.route?.[0]?.station +
+            "-" +
+            route?.route?.[route.route.length - 1]?.station;
+
+        if (lastCenteredRoute !== currentRouteKey) {
+            const fitScale = (canvasW - 40) / layout.svgW;
+            scale = Math.min(1, Math.max(0.3, fitScale));
+            initialScale = scale;
+
+            tx = (canvasW - layout.svgW * scale) / 2;
+            ty = (canvasH - layout.svgH * scale) / 2;
+
+            lastCenteredRoute = currentRouteKey;
+        }
+    }
+
     let panning = false;
     let sx = 0,
         sy = 0,
         stx = 0,
         sty = 0;
-
     let initialDist = 0;
     let initialScale = 1;
 
@@ -197,7 +209,6 @@
     function onMU() {
         panning = false;
     }
-
     function getTouchDist(t1, t2) {
         return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
     }
@@ -215,20 +226,19 @@
             sty = ty;
         }
     }
-
     function onTM(e) {
         if (e.touches.length === 2) {
             e.preventDefault();
             const currentDist = getTouchDist(e.touches[0], e.touches[1]);
-            const zoomFactor = currentDist / initialDist;
-            let ns = initialScale * zoomFactor;
-            scale = Math.min(6, Math.max(0.3, ns));
+            scale = Math.min(
+                6,
+                Math.max(0.3, initialScale * (currentDist / initialDist)),
+            );
         } else if (e.touches.length === 1 && panning) {
             tx = stx + e.touches[0].clientX - sx;
             ty = sty + e.touches[0].clientY - sy;
         }
     }
-
     function onTE() {
         panning = false;
     }
@@ -252,6 +262,8 @@
 {#if route && layout}
     <div
         class="canvas"
+        bind:clientWidth={canvasW}
+        bind:clientHeight={canvasH}
         style="cursor:{panning
             ? 'grabbing'
             : 'grab'}; background-position: {tx}px {ty}px; background-size: {24 *
@@ -273,16 +285,24 @@
             viewBox="0 0 {layout.svgW} {layout.svgH}"
             style="display:block; transform-origin:0 0; transform:translate({tx}px,{ty}px) scale({scale}); transition: none;"
         >
-            {#each layout.segs as seg}
-                <path
-                    d={seg.d}
-                    stroke="var(--bg-color)"
-                    stroke-width={HALO_W}
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    fill="none"
-                />
-            {/each}
+            <defs>
+                {#each layout.pts as pt, i}
+                    {#if i === 0 || i === layout.pts.length - 1}
+                        <mask id="term-mask-{i}">
+                            <rect width="100%" height="100%" fill="white" />
+                            <text
+                                x={pt.x}
+                                y={pt.y}
+                                dominant-baseline="central"
+                                text-anchor="middle"
+                                font-size="13"
+                                font-weight="800"
+                                fill="black">{pt.stopNumber}</text
+                            >
+                        </mask>
+                    {/if}
+                {/each}
+            </defs>
 
             {#each layout.segs as seg}
                 <path
@@ -303,8 +323,6 @@
                     height={24}
                     rx={6}
                     fill={lbl.color}
-                    stroke="var(--bg-color)"
-                    stroke-width="3"
                 />
                 <text
                     x={lbl.x}
@@ -329,25 +347,10 @@
                     <circle
                         cx={pt.x}
                         cy={pt.y}
-                        r={TERM_R + 3}
-                        fill="var(--bg-color)"
-                    />
-                    <circle
-                        cx={pt.x}
-                        cy={pt.y}
                         r={TERM_R}
                         fill="var(--text-main)"
+                        mask="url(#term-mask-{i})"
                     />
-                    <text
-                        x={pt.x}
-                        y={pt.y}
-                        dominant-baseline="central"
-                        text-anchor="middle"
-                        font-size="13"
-                        font-weight="800"
-                        fill="var(--bg-color)"
-                        style="pointer-events: none;">{pt.stopNumber}</text
-                    >
                 {:else if pt.isTransfer}
                     <rect
                         x={pt.x - XFER_W / 2}
@@ -355,7 +358,7 @@
                         width={XFER_W}
                         height={XFER_H}
                         rx={XFER_H / 2}
-                        fill="var(--bg-color)"
+                        fill="transparent"
                         stroke="var(--text-main)"
                         stroke-width="3"
                     />
@@ -373,16 +376,10 @@
                     <circle
                         cx={pt.x}
                         cy={pt.y}
-                        r={STOP_R + 3}
-                        fill="var(--bg-color)"
-                    />
-                    <circle
-                        cx={pt.x}
-                        cy={pt.y}
                         r={STOP_R}
-                        fill="var(--bg-color)"
+                        fill="transparent"
                         stroke="var(--border-color)"
-                        stroke-width="1.5"
+                        stroke-width="2"
                     />
                     <text
                         x={pt.x}
@@ -400,17 +397,12 @@
                     <text
                         x={pt.x}
                         y={pt.y}
+                        class="node-label"
+                        font-size={isTerm ? "14" : "12"}
+                        font-weight={isTerm ? "700" : "600"}
                         text-anchor={lbl.side === "rotated"
                             ? "start"
                             : "middle"}
-                        font-size={isTerm ? "14" : "12"}
-                        font-weight={isTerm ? "700" : "600"}
-                        fill="var(--text-main)"
-                        stroke="var(--bg-color)"
-                        stroke-width="4"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        style="paint-order: stroke fill;"
                         transform={lbl.side === "above"
                             ? `translate(0, -${isTerm ? TERM_R + 10 : pt.isTransfer ? XFER_H / 2 + 10 : STOP_R + 12})`
                             : lbl.side === "below"
@@ -432,25 +424,22 @@
         margin: 0;
         padding: 0;
         overflow: hidden;
-        background-color: transparent; /* 👈 1. Changed to transparent */
+        background-color: transparent !important;
     }
 
     :root {
-        --bg-color: #f4f5f8; /* Light mode cutout color */
-        --border-color: #e2e4e9;
         --text-main: #1a1c29;
-        --grid-color: rgba(0, 0, 0, 0.06);
-        --halo-color: var(--bg-color);
+        --border-color: #6b7280;
+        --grid-color: rgba(0, 0, 0, 0.08);
+        --label-halo: rgba(255, 255, 255, 0.9);
     }
 
     @media (prefers-color-scheme: dark) {
         :root {
-            /* 👇 2. Change this to the EXACT hex code of your Sketchware app's background! */
-            --bg-color: #171413;
-
-            --border-color: #262a3d;
             --text-main: #f3f4f6;
+            --border-color: #9ca3af;
             --grid-color: rgba(255, 255, 255, 0.05);
+            --label-halo: #171413;
         }
     }
 
@@ -458,7 +447,7 @@
         overflow: hidden;
         width: 100vw;
         height: 100vh;
-        background-color: transparent; /* 👈 3. Changed to transparent */
+        background-color: transparent !important;
         background-image: radial-gradient(
             var(--grid-color) 1.5px,
             transparent 1.5px
@@ -468,5 +457,19 @@
         -webkit-user-select: none;
         user-select: none;
         font-family: "DM Sans", system-ui, sans-serif;
+    }
+
+    .canvas svg {
+        will-change: transform;
+        user-select: none;
+    }
+
+    .node-label {
+        fill: var(--text-main);
+        paint-order: stroke fill;
+        stroke: var(--label-halo);
+        stroke-width: 4px;
+        stroke-linecap: round;
+        stroke-linejoin: round;
     }
 </style>
