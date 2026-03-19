@@ -28,8 +28,27 @@
     <SchematicRoute route={routed} />
 {:else}
     <div
-        style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #0f111a; color: white; font-family: sans-serif;"
+        class="g"
+        style="display: flex; justify-content: center; align-items: center; height: 100vh; color: white; font-family: sans-serif;"
     >
         Loading route...
     </div>
 {/if}
+
+<style>
+    .g {
+        overflow: hidden;
+        width: 100vw;
+        height: 100vh;
+        background-color: transparent; /* 👈 3. Changed to transparent */
+        background-image: radial-gradient(
+            var(--grid-color) 1.5px,
+            transparent 1.5px
+        );
+        position: relative;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+        font-family: "DM Sans", system-ui, sans-serif;
+    }
+</style>
