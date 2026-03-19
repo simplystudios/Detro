@@ -179,7 +179,7 @@
             return;
         const pt = layout.pts[index];
 
-        scale = 1.6;
+        scale = 1;
         initialScale = scale;
 
         tx = canvasW / 2 - pt.x * scale;
