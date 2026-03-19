@@ -1,11 +1,10 @@
 import { json } from "@sveltejs/kit";
-import fs from "fs";
-import path from "path";
 
 /* ---------- LOAD DATA ---------- */
 
 const res = await fetch("https://detroweb.vercel.app/metrolines.json");
 const lines = await res.json();
+
 const interchanges = [
   { from: "Noida Sec-52", to: "Noida Sector 51", note: "Walkway transfer" },
   {
@@ -13,29 +12,29 @@ const interchanges = [
     to: "Dilli Haat - INA",
     note: "Internal transfer",
   },
-  // Add any other stations that have slightly different names but are the same location
 ];
 
 /* ---------- GRAPH ---------- */
+
 function buildGraph(lines) {
   const g = {};
 
-  // 1. Build standard connections within lines
+  // Line connections
   for (const line in lines) {
-    const s = lines[line];
-    for (let i = 0; i < s.length - 1; i++) {
-      g[s[i]] ??= [];
-      g[s[i + 1]] ??= [];
-      g[s[i]].push(s[i + 1]);
-      g[s[i + 1]].push(s[i]);
+    const stations = lines[line];
+    for (let i = 0; i < stations.length - 1; i++) {
+      g[stations[i]] ??= [];
+      g[stations[i + 1]] ??= [];
+      g[stations[i]].push(stations[i + 1]);
+      g[stations[i + 1]].push(stations[i]);
     }
   }
 
-  // 2. Build manual bridges (Virtual Transfers)
-  interchanges.forEach((link) => {
-    if (g[link.from] && g[link.to]) {
-      g[link.from].push(link.to);
-      g[link.to].push(link.from);
+  // Interchange bridges
+  interchanges.forEach(({ from, to }) => {
+    if (g[from] && g[to]) {
+      g[from].push(to);
+      g[to].push(from);
     }
   });
 
@@ -56,16 +55,17 @@ function findRoute(graph, start, end) {
 
     if (node === end) return path;
     if (seen.has(node)) continue;
+
     seen.add(node);
 
-    for (const n of graph[node] || []) {
-      queue.push([...path, n]);
+    for (const next of graph[node] || []) {
+      queue.push([...path, next]);
     }
   }
   return [];
 }
 
-/* ---------- LINE LOGIC ---------- */
+/* ---------- LINE HELPERS ---------- */
 
 function getConnectingLine(lines, a, b) {
   for (const line in lines) {
@@ -76,13 +76,15 @@ function getConnectingLine(lines, a, b) {
       }
     }
   }
-  return null;
+  return null; // interchange or virtual hop
 }
 
 function getRouteLines(route, lines) {
   const used = [];
   for (let i = 0; i < route.length - 1; i++) {
-    used.push(getConnectingLine(lines, route[i], route[i + 1]));
+    used.push(
+      getConnectingLine(lines, route[i], route[i + 1]) ?? "INTERCHANGE",
+    );
   }
   return used;
 }
@@ -90,11 +92,24 @@ function getRouteLines(route, lines) {
 function findTransferStations(route, segmentLines) {
   const transfers = [];
   for (let i = 1; i < segmentLines.length; i++) {
-    if (segmentLines[i] !== segmentLines[i - 1]) {
+    if (
+      segmentLines[i] !== segmentLines[i - 1] &&
+      segmentLines[i] !== "INTERCHANGE"
+    ) {
       transfers.push(route[i]);
     }
   }
   return transfers;
+}
+
+/* ---------- STRUCTURED ROUTE ---------- */
+
+function buildRouteSteps(route, segmentLines, transferStations) {
+  return route.map((station, i) => ({
+    station,
+    line: i === 0 ? segmentLines[0] : segmentLines[i - 1],
+    isTransfer: transferStations.includes(station),
+  }));
 }
 
 /* ---------- API ---------- */
@@ -114,13 +129,13 @@ export function GET({ url }) {
   const route = findRoute(graph, from, to);
   const segmentLines = getRouteLines(route, lines);
   const transferStations = findTransferStations(route, segmentLines);
+  const steps = buildRouteSteps(route, segmentLines, transferStations);
 
   return json({
     from,
     to,
     stops: route.length - 1,
-    route,
-    segmentLines,
+    route: steps, // 👈 SAFE, STRUCTURED
     transferStations,
   });
 }
