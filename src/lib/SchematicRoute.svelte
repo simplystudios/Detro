@@ -525,7 +525,7 @@
         --node-base: #161925;
         --node-bg: #1a1c29; /* ← ADD THIS */
         --node-highlight: #e2e4e9;
-        --grid-color: rgba(255, 255, 255, 0.05);
+        --grid-color: rgba(0, 0, 0, 0.08);
     }
 
     @media (prefers-color-scheme: dark) {
