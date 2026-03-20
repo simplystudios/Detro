@@ -86,7 +86,7 @@
             const color = LINE_COLORS[segLines[i]] ?? "#555";
             const dy = b.y - a.y;
             const dx = b.x - a.x;
-            let d =
+            const d =
                 Math.abs(dy) < 2
                     ? `M${a.x} ${a.y} L${b.x} ${b.y}`
                     : `M${a.x} ${a.y} L${a.x + (dx - Math.abs(dy))} ${a.y} L${b.x} ${b.y}`;
@@ -142,76 +142,48 @@
         };
     })();
 
-    // â”€â”€ CENTERING â”€â”€
-    // Root cause of Android off-center bug:
-    //   bind:clientWidth/Height fires too late or returns 0
-    //   window.innerWidth/Height can be wrong before WebView finishes layout
-    // Fix: bind:this on the element + getBoundingClientRect() at call time.
-    // Double-rAF ensures the browser has finished a paint cycle before we measure.
-
     let canvasEl = null;
     let scale = 1;
     let tx = 0,
         ty = 0;
-    let lastCenteredRoute = "";
     let isAnimating = false;
     let currentStationIndex = 0;
     let initialScale = 1;
-    let mounted = false;
 
-    $: if (layout && mounted) {
-        const currentRouteKey =
+    // Re-center on first station whenever the route prop changes
+    let lastRouteKey = "";
+    $: if (layout && canvasEl) {
+        const key =
             route?.route?.[0]?.station +
             "-" +
             route?.route?.[route.route.length - 1]?.station;
-
-        if (lastCenteredRoute !== currentRouteKey) {
-            lastCenteredRoute = currentRouteKey;
+        if (key !== lastRouteKey) {
+            lastRouteKey = key;
             currentStationIndex = 0;
-            // Double rAF: first frame commits the DOM, second frame has real layout sizes
-            requestAnimationFrame(() => {
-                requestAnimationFrame(() => {
-                    centerOnStation(0);
-                });
-            });
+            requestAnimationFrame(() => centerOnStation(0));
         }
-    }
-
-    function getCanvasSize() {
-        if (canvasEl) {
-            const r = canvasEl.getBoundingClientRect();
-            if (r.width > 0 && r.height > 0) return { w: r.width, h: r.height };
-        }
-        // Fallback â€” clientWidth/clientHeight are more reliable than innerWidth on WebView
-        return {
-            w: document.documentElement.clientWidth,
-            h: document.documentElement.clientHeight,
-        };
     }
 
     function centerOnStation(index) {
-        if (!layout || !layout.pts[index]) return;
+        if (!layout?.pts[index] || !canvasEl) return;
         const pt = layout.pts[index];
-        const { w, h } = getCanvasSize();
+        const { width, height } = canvasEl.getBoundingClientRect();
 
         scale = 1;
         initialScale = 1;
-
-        tx = w / 2 - pt.x * scale;
-        ty = h / 2 - pt.y * scale;
+        // Simply place the station at the exact centre of the container
+        tx = width / 2 - pt.x;
+        ty = height / 2 - pt.y;
 
         isAnimating = true;
-        setTimeout(() => {
-            isAnimating = false;
-        }, 400);
+        setTimeout(() => (isAnimating = false), 400);
 
-        if (window.AndroidBridge?.onStationChanged) {
-            window.AndroidBridge.onStationChanged(pt.name);
-        }
+        window.AndroidBridge?.onStationChanged?.(pt.name);
     }
 
     onMount(() => {
-        mounted = true;
+        // Center on the first station once the element is in the DOM
+        requestAnimationFrame(() => centerOnStation(0));
 
         window.nextStation = () => {
             if (layout && currentStationIndex < layout.pts.length - 1) {
@@ -226,18 +198,15 @@
             }
         };
 
-        // Re-center on orientation change / resize
-        const ro = new ResizeObserver(() => {
-            requestAnimationFrame(() => {
-                centerOnStation(currentStationIndex);
-            });
-        });
-        if (canvasEl) ro.observe(canvasEl);
-
+        // Re-center on resize / orientation change
+        const ro = new ResizeObserver(() =>
+            requestAnimationFrame(() => centerOnStation(currentStationIndex)),
+        );
+        ro.observe(canvasEl);
         return () => ro.disconnect();
     });
 
-    // â”€â”€ PAN / ZOOM â”€â”€
+    // ── PAN / ZOOM ──
     let panning = false;
     let sx = 0,
         sy = 0,
@@ -267,9 +236,10 @@
         sty = ty;
     }
     function onMM(e) {
-        if (!panning) return;
-        tx = stx + e.clientX - sx;
-        ty = sty + e.clientY - sy;
+        if (panning) {
+            tx = stx + e.clientX - sx;
+            ty = sty + e.clientY - sy;
+        }
     }
     function onMU() {
         panning = false;
@@ -295,10 +265,14 @@
     function onTM(e) {
         if (e.touches.length === 2) {
             e.preventDefault();
-            const d = getTouchDist(e.touches[0], e.touches[1]);
             scale = Math.min(
                 6,
-                Math.max(0.3, initialScale * (d / initialDist)),
+                Math.max(
+                    0.3,
+                    initialScale *
+                        (getTouchDist(e.touches[0], e.touches[1]) /
+                            initialDist),
+                ),
             );
         } else if (e.touches.length === 1 && panning) {
             tx = stx + e.touches[0].clientX - sx;
@@ -310,19 +284,17 @@
     }
 
     function labelAngle(i, pt, layout) {
-        const isFirst = i === 0,
-            isLast = i === layout.pts.length - 1;
-        if (isFirst || isLast) return { side: "above", rotate: 0 };
+        if (i === 0 || i === layout.pts.length - 1)
+            return { side: "above", rotate: 0 };
         const prev = layout.pts[i - 1],
             next = layout.pts[i + 1];
         const dx = (next?.x ?? pt.x) - (prev?.x ?? pt.x);
         const dy = (next?.y ?? pt.y) - (prev?.y ?? pt.y);
-        if (Math.abs(dy) > 8) {
+        if (Math.abs(dy) > 8)
             return {
                 side: "rotated",
                 rotate: (Math.atan2(dy, dx) * 180) / Math.PI - 90,
             };
-        }
         return { side: i % 2 === 0 ? "above" : "below", rotate: 0 };
     }
 </script>
@@ -430,10 +402,8 @@
                     text-anchor="middle"
                     font-size="11"
                     font-weight="700"
-                    fill="white"
+                    fill="white">{lbl.name}</text
                 >
-                    {lbl.name}
-                </text>
             {/each}
 
             {#each layout.pts as pt, i}
@@ -477,7 +447,6 @@
                         stroke-width="2.5"
                         stroke-linecap="round"
                         stroke-linejoin="round"
-                        class="node-num num-transfer"
                     >
                         <path d="M16 3l4 4-4 4M20 7H4" />
                         <path d="M8 21l-4-4 4-4M4 17h16" />
@@ -513,9 +482,9 @@
                             ? "start"
                             : "middle"}
                         transform={lbl.side === "above"
-                            ? `translate(0, -${isTerm ? TERM_R + 10 : pt.isTransfer ? XFER_H / 2 + 10 : STOP_R + 12})`
+                            ? `translate(0, -${isTerm ? TERM_R + 10 : XFER_H / 2 + 10})`
                             : lbl.side === "below"
-                              ? `translate(0, ${isTerm ? TERM_R + 20 : pt.isTransfer ? XFER_H / 2 + 20 : STOP_R + 20})`
+                              ? `translate(0, ${isTerm ? TERM_R + 20 : XFER_H / 2 + 20})`
                               : `translate(${pt.x},${pt.y}) rotate(${lbl.rotate}) translate(${STOP_R + 8}, 4) rotate(${-lbl.rotate}) translate(-${pt.x},-${pt.y})`}
                         >{pt.name}</text
                     >
@@ -539,7 +508,6 @@
         --text-main: #f3f4f6;
         --text-sec: #1a1c29;
         --text-inv: #1a1c29;
-        --term-text: #1a1c29;
         --border-color: #3b4054;
         --node-base: #161925;
         --node-bg: #1a1c29;
@@ -562,9 +530,8 @@
 
     .canvas {
         overflow: hidden;
-        width: 100vw;
-        height: 100vh;
-        height: 100dvh;
+        width: 100%;
+        height: 100%;
         background-color: transparent !important;
         background-image: radial-gradient(
             var(--grid-color) 1.5px,
@@ -591,8 +558,6 @@
         font-size: 14px;
     }
     .num-transfer {
-        padding: 10px;
-        margin: 10px;
         font-size: 11px;
     }
     .num-stop {
