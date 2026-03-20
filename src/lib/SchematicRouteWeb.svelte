@@ -180,15 +180,24 @@
     }
 
     function centerOnStation(index) {
-        if (!layout || !layout.pts[index] || canvasW === 0 || canvasH === 0)
-            return;
+        // Grab the TRUE dimensions directly from the window
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+
+        if (!layout || !layout.pts[index] || w === 0 || h === 0) return;
         const pt = layout.pts[index];
 
-        scale = 1.5;
+        scale = devFocusScale;
         initialScale = scale;
 
-        tx = canvasW / 2 - pt.x * scale;
-        ty = canvasH / 2 - pt.y * scale;
+        // Check if Android passed the status bar height, default to 0 if not
+        const statusBarOffset = window.androidStatusBarHeight || 0;
+
+        // 1. Calculate X normally
+        tx = w / 2 - pt.x * scale;
+
+        // 2. Calculate Y and push it down by exactly half the status bar height!
+        ty = h / 2 - pt.y * scale + statusBarOffset / 2;
 
         isAnimating = true;
         setTimeout(() => (isAnimating = false), 400);
