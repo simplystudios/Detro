@@ -86,10 +86,12 @@
             const color = LINE_COLORS[segLines[i]] ?? "#555";
             const dy = b.y - a.y;
             const dx = b.x - a.x;
-            const d =
+
+            let d =
                 Math.abs(dy) < 2
                     ? `M${a.x} ${a.y} L${b.x} ${b.y}`
                     : `M${a.x} ${a.y} L${a.x + (dx - Math.abs(dy))} ${a.y} L${b.x} ${b.y}`;
+
             segs.push({ d, color, fromIdx: i, toIdx: i + 1 });
         }
 
@@ -99,21 +101,25 @@
 
         for (let i = 0; i <= segLines.length; i++) {
             const lineName = i < segLines.length ? segLines[i] : null;
+
             if (lineName !== currentLine) {
                 if (currentLine !== null) {
                     let maxHLen = 0;
                     let bestCenter = { x: 0, y: 0 };
+
                     for (let j = lineStartIdx; j < i; j++) {
                         const a = pts[j];
                         const b = pts[j + 1];
                         const dx = b.x - a.x;
                         const dy = b.y - a.y;
                         const hLen = Math.abs(dy) < 2 ? dx : dx - Math.abs(dy);
+
                         if (hLen > maxHLen) {
                             maxHLen = hLen;
                             bestCenter = { x: a.x + hLen / 2, y: a.y };
                         }
                     }
+
                     lineLabels.push({
                         name: currentLine,
                         color: LINE_COLORS[currentLine] ?? "#555",
@@ -142,107 +148,96 @@
         };
     })();
 
-    // THE FIX: Use strictly Svelte's bound container dimensions
+    // ── INTERACTIVITY & CENTERING LOGIC ──
     let canvasW = 0;
     let canvasH = 0;
-
-    let scale = 1.5;
+    let scale = 1;
     let tx = 0,
         ty = 0;
+    let lastCenteredRoute = "";
+
     let isAnimating = false;
     let currentStationIndex = 0;
-    let initialScale = 1.5;
 
-    // ================= DEV TOOLS STATE START =================
-    let devFocusScale = 1.5;
-    // =========================================================
-
-    // THE FIX: Automatically re-center if the Sketchware WebView resizes
-    // (e.g. going from 0px height on load to full height)
-    let lastW = 0,
-        lastH = 0;
-    $: if (layout && canvasW > 0 && canvasH > 0) {
-        if (Math.abs(canvasW - lastW) > 5 || Math.abs(canvasH - lastH) > 5) {
-            lastW = canvasW;
-            lastH = canvasH;
-            if (!panning) {
-                setTimeout(() => centerOnStation(currentStationIndex), 50);
-            }
+    /**
+     * Returns the status-bar offset to use when centering a station.
+     *
+     * - Android WebView: `window.androidStatusBarHeight` is injected by the
+     *   native app via JavascriptInterface, so we use that value.
+     * - Everything else (browser, desktop, web): use 0 so the station sits
+     *   exactly in the vertical centre of the canvas.
+     */
+    function getStatusBarOffset() {
+        // Only trust the Android value when it has actually been set by the
+        // native bridge (i.e. it's a positive number, not just the property
+        // being undefined/null/0 in a normal browser).
+        const androidValue = window.androidStatusBarHeight;
+        if (typeof androidValue === "number" && androidValue > 0) {
+            return androidValue;
         }
+        return 0;
     }
 
-    let lastRouteKey = "";
-    $: if (layout) {
-        const key =
+    $: if (layout && canvasW && canvasH) {
+        const currentRouteKey =
             route?.route?.[0]?.station +
             "-" +
             route?.route?.[route.route.length - 1]?.station;
-        if (key !== lastRouteKey) {
-            lastRouteKey = key;
+
+        if (lastCenteredRoute !== currentRouteKey) {
             currentStationIndex = 0;
-            setTimeout(() => centerOnStation(0), 50);
+            setTimeout(() => {
+                centerOnStation(0);
+            }, 50);
+            lastCenteredRoute = currentRouteKey;
         }
     }
 
     function centerOnStation(index) {
         if (!layout || !layout.pts[index] || canvasW === 0 || canvasH === 0)
             return;
-        const pt = layout.pts[index];
 
-        scale = devFocusScale;
+        const pt = layout.pts[index];
+        scale = 1;
         initialScale = scale;
 
-        // Grab status bar offset from Java (defaults to 0 if not sent)
-        const sbOffset = window.androidStatusBarHeight || 0;
-
-        // Push the map down slightly because the text is above the node
-        const visualOffset = 25;
-
-        // 👇 HERE IS YOUR MANUAL NUDGE 👇
-        const manualNudge = 20;
+        const statusBarOffset = getStatusBarOffset();
 
         tx = canvasW / 2 - pt.x * scale;
-        // Added the manualNudge to the Y-axis (ty) to push it down further
-        ty =
-            canvasH / 2 -
-            pt.y * scale +
-            sbOffset / 2 +
-            visualOffset +
-            manualNudge;
+        ty = canvasH / 2 + statusBarOffset / 2 - pt.y * scale;
 
         isAnimating = true;
-        setTimeout(() => (isAnimating = false), 400);
+        setTimeout(() => {
+            isAnimating = false;
+        }, 400);
 
         if (window.AndroidBridge && window.AndroidBridge.onStationChanged) {
             window.AndroidBridge.onStationChanged(pt.name);
         }
     }
-    function nextStationLocal() {
-        if (layout && currentStationIndex < layout.pts.length - 1) {
-            currentStationIndex++;
-            centerOnStation(currentStationIndex);
-        }
-    }
-
-    function prevStationLocal() {
-        if (layout && currentStationIndex > 0) {
-            currentStationIndex--;
-            centerOnStation(currentStationIndex);
-        }
-    }
 
     onMount(() => {
-        window.nextStation = nextStationLocal;
-        window.prevStation = prevStationLocal;
+        window.nextStation = () => {
+            if (layout && currentStationIndex < layout.pts.length - 1) {
+                currentStationIndex++;
+                centerOnStation(currentStationIndex);
+            }
+        };
+        window.prevStation = () => {
+            if (layout && currentStationIndex > 0) {
+                currentStationIndex--;
+                centerOnStation(currentStationIndex);
+            }
+        };
     });
 
-    // ── PAN / ZOOM ──
     let panning = false;
     let sx = 0,
         sy = 0,
         stx = 0,
         sty = 0;
     let initialDist = 0;
+    let initialScale = 1;
 
     function onWheel(e) {
         isAnimating = false;
@@ -266,10 +261,9 @@
         sty = ty;
     }
     function onMM(e) {
-        if (panning) {
-            tx = stx + e.clientX - sx;
-            ty = sty + e.clientY - sy;
-        }
+        if (!panning) return;
+        tx = stx + e.clientX - sx;
+        ty = sty + e.clientY - sy;
     }
     function onMU() {
         panning = false;
@@ -277,6 +271,7 @@
     function getTouchDist(t1, t2) {
         return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
     }
+
     function onTS(e) {
         isAnimating = false;
         if (e.touches.length === 2) {
@@ -294,14 +289,10 @@
     function onTM(e) {
         if (e.touches.length === 2) {
             e.preventDefault();
+            const currentDist = getTouchDist(e.touches[0], e.touches[1]);
             scale = Math.min(
                 6,
-                Math.max(
-                    0.3,
-                    initialScale *
-                        (getTouchDist(e.touches[0], e.touches[1]) /
-                            initialDist),
-                ),
+                Math.max(0.3, initialScale * (currentDist / initialDist)),
             );
         } else if (e.touches.length === 1 && panning) {
             tx = stx + e.touches[0].clientX - sx;
@@ -313,17 +304,19 @@
     }
 
     function labelAngle(i, pt, layout) {
-        if (i === 0 || i === layout.pts.length - 1)
-            return { side: "above", rotate: 0 };
+        const isFirst = i === 0,
+            isLast = i === layout.pts.length - 1;
+        if (isFirst || isLast) return { side: "above", rotate: 0 };
         const prev = layout.pts[i - 1],
             next = layout.pts[i + 1];
         const dx = (next?.x ?? pt.x) - (prev?.x ?? pt.x);
         const dy = (next?.y ?? pt.y) - (prev?.y ?? pt.y);
-        if (Math.abs(dy) > 8)
+        if (Math.abs(dy) > 8) {
             return {
                 side: "rotated",
                 rotate: (Math.atan2(dy, dx) * 180) / Math.PI - 90,
             };
+        }
         return { side: i % 2 === 0 ? "above" : "below", rotate: 0 };
     }
 </script>
@@ -333,10 +326,10 @@
         class="canvas"
         bind:clientWidth={canvasW}
         bind:clientHeight={canvasH}
-        style="cursor:{panning ? 'grabbing' : 'grab'};
-               background-position: {tx}px {ty}px;
-               background-size: {24 * scale}px {24 * scale}px;
-               transition: {isAnimating
+        style="cursor:{panning
+            ? 'grabbing'
+            : 'grab'}; background-position: {tx}px {ty}px; background-size: {24 *
+            scale}px {24 * scale}px; transition: {isAnimating
             ? 'background-position 0.4s ease-out, background-size 0.4s ease-out'
             : 'none'};"
         on:wheel={onWheel}
@@ -354,15 +347,14 @@
             width={layout.svgW}
             height={layout.svgH}
             viewBox="0 0 {layout.svgW} {layout.svgH}"
-            style="display:block; transform-origin:0 0;
-                   transform:translate({tx}px,{ty}px) scale({scale});
-                   transition: {isAnimating
+            style="display:block; transform-origin:0 0; transform:translate({tx}px,{ty}px) scale({scale}); transition: {isAnimating
                 ? 'transform 0.4s ease-out'
                 : 'none'};"
         >
             <defs>
                 <mask id="track-cutout">
                     <rect width="100%" height="100%" fill="white" />
+
                     {#each layout.lineLabels as lbl}
                         <rect
                             x={lbl.x - lbl.width / 2 - 4}
@@ -373,8 +365,12 @@
                             fill="black"
                         />
                     {/each}
+
                     {#each layout.pts as pt, i}
-                        {@const isTerm = i === 0 || i === layout.pts.length - 1}
+                        {@const isFirst = i === 0}
+                        {@const isLast = i === layout.pts.length - 1}
+                        {@const isTerm = isFirst || isLast}
+
                         {#if isTerm}
                             <circle
                                 cx={pt.x}
@@ -477,6 +473,7 @@
                         stroke-width="2.5"
                         stroke-linecap="round"
                         stroke-linejoin="round"
+                        class="node-num num-transfer"
                     >
                         <path d="M16 3l4 4-4 4M20 7H4" />
                         <path d="M8 21l-4-4 4-4M4 17h16" />
@@ -512,49 +509,23 @@
                             ? "start"
                             : "middle"}
                         transform={lbl.side === "above"
-                            ? `translate(0, -${isTerm ? TERM_R + 10 : XFER_H / 2 + 10})`
+                            ? `translate(0, -${isTerm ? TERM_R + 10 : pt.isTransfer ? XFER_H / 2 + 10 : STOP_R + 12})`
                             : lbl.side === "below"
-                              ? `translate(0, ${isTerm ? TERM_R + 20 : XFER_H / 2 + 20})`
+                              ? `translate(0, ${isTerm ? TERM_R + 20 : pt.isTransfer ? XFER_H / 2 + 20 : STOP_R + 20})`
                               : `translate(${pt.x},${pt.y}) rotate(${lbl.rotate}) translate(${STOP_R + 8}, 4) rotate(${-lbl.rotate}) translate(-${pt.x},-${pt.y})`}
-                        >{pt.name}</text
                     >
+                        {pt.name}
+                    </text>
                 {/if}
             {/each}
         </svg>
-
-        <div
-            class="dev-panel"
-            on:mousedown|stopPropagation
-            on:touchstart|stopPropagation
-        >
-            <b>Dev Tools</b>
-            <label>
-                Focus Zoom: {devFocusScale.toFixed(2)}x
-                <input
-                    type="range"
-                    min="0.3"
-                    max="3"
-                    step="0.1"
-                    bind:value={devFocusScale}
-                    on:input={() => centerOnStation(currentStationIndex)}
-                />
-            </label>
-            <div class="dev-buttons">
-                <button on:click={prevStationLocal}>Prev</button>
-                <button on:click={nextStationLocal}>Next</button>
-            </div>
-        </div>
     </div>
 {/if}
 
 <style>
     @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap");
 
-    /* THE FIX: Force the body to fill the viewport precisely */
-    :global(html),
     :global(body) {
-        width: 100%;
-        height: 100%;
         margin: 0;
         padding: 0;
         overflow: hidden;
@@ -565,6 +536,7 @@
         --text-main: #f3f4f6;
         --text-sec: #1a1c29;
         --text-inv: #1a1c29;
+        --term-text: #1a1c29;
         --border-color: #3b4054;
         --node-base: #161925;
         --node-bg: #1a1c29;
@@ -586,20 +558,15 @@
     }
 
     .canvas {
-        /* THE FIX: Absolute positioning forces it to perfectly measure the Sketchware container */
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        overflow: hidden;
         width: 100%;
         height: 100%;
-        overflow: hidden;
         background-color: transparent !important;
         background-image: radial-gradient(
             var(--grid-color) 1.5px,
             transparent 1.5px
         );
+        position: relative;
         touch-action: none;
         -webkit-user-select: none;
         user-select: none;
@@ -616,15 +583,19 @@
         font-weight: 800;
         pointer-events: none;
     }
+
     .num-terminal {
         font-size: 14px;
     }
     .num-transfer {
+        padding: 10px;
+        margin: 10px;
         font-size: 11px;
     }
     .num-stop {
         font-size: 10px;
     }
+
     .node-label {
         paint-order: stroke fill;
     }

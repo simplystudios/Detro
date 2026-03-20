@@ -23,7 +23,7 @@
     const STOP_R = 9;
     const TERM_R = 14;
     const XFER_W = 30;
-    const XFER_H = 30;
+    const XFER_H = 18;
     const V_SHIFT = 64;
     const PAD_X = 80;
     const PAD_Y = 100;
@@ -86,8 +86,7 @@
             const color = LINE_COLORS[segLines[i]] ?? "#555";
             const dy = b.y - a.y;
             const dx = b.x - a.x;
-
-            let d =
+            const d =
                 Math.abs(dy) < 2
                     ? `M${a.x} ${a.y} L${b.x} ${b.y}`
                     : `M${a.x} ${a.y} L${a.x + (dx - Math.abs(dy))} ${a.y} L${b.x} ${b.y}`;
@@ -148,18 +147,19 @@
         };
     })();
 
-    // ── INTERACTIVITY & CENTERING LOGIC ──
+    // --- INTERACTIVITY & CENTERING ---
     let canvasW = 0;
     let canvasH = 0;
-    let scale = 1;
+    let scale = 1.5;
     let tx = 0,
         ty = 0;
-    let lastCenteredRoute = "";
-
     let isAnimating = false;
     let currentStationIndex = 0;
+    let initialScale = 1.5;
 
-    $: if (layout && canvasW && canvasH) {
+    let lastRouteKey = "";
+
+    $: if (layout && canvasW > 0 && canvasH > 0) {
         const currentRouteKey =
             route?.route?.[0]?.station +
             "-" +
@@ -169,10 +169,11 @@
             currentStationIndex = 0;
             setTimeout(() => {
                 centerOnStation(0);
-            }, 50); // Center on start
+            }, 50);
             lastCenteredRoute = currentRouteKey;
         }
     }
+    let lastCenteredRoute = "";
 
     function centerOnStation(index) {
         if (!layout || !layout.pts[index] || canvasW === 0 || canvasH === 0)
@@ -182,10 +183,13 @@
         scale = 1;
         initialScale = scale;
 
-        const statusBarOffset = window.androidStatusBarHeight || 0; // passed from Android or fallback
+        // Android Status Bar Offset (from your Java code)
+        const sbOffset = window.androidStatusBarHeight || 0;
+        // Text Offset + Your Custom 20px Nudge
+        const manualNudge = 45;
 
         tx = canvasW / 2 - pt.x * scale;
-        ty = canvasH / 2 + statusBarOffset / 2 - pt.y * scale;
+        ty = canvasH / 2 - pt.y * scale + sbOffset / 2 + manualNudge;
 
         isAnimating = true;
         setTimeout(() => {
@@ -218,7 +222,6 @@
         stx = 0,
         sty = 0;
     let initialDist = 0;
-    let initialScale = 1;
 
     function onWheel(e) {
         isAnimating = false;
@@ -335,7 +338,6 @@
             <defs>
                 <mask id="track-cutout">
                     <rect width="100%" height="100%" fill="white" />
-
                     {#each layout.lineLabels as lbl}
                         <rect
                             x={lbl.x - lbl.width / 2 - 4}
@@ -346,12 +348,8 @@
                             fill="black"
                         />
                     {/each}
-
                     {#each layout.pts as pt, i}
-                        {@const isFirst = i === 0}
-                        {@const isLast = i === layout.pts.length - 1}
-                        {@const isTerm = isFirst || isLast}
-
+                        {@const isTerm = i === 0 || i === layout.pts.length - 1}
                         {#if isTerm}
                             <circle
                                 cx={pt.x}
@@ -443,24 +441,14 @@
                         stroke="var(--node-highlight)"
                         stroke-width="2"
                     />
-                    <svg
-                        x={pt.x - 8}
-                        y={pt.y - 8}
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="var(--text-main)"
-                        stroke-width="2.5"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
+                    <text
+                        x={pt.x}
+                        y={pt.y}
+                        dominant-baseline="central"
+                        text-anchor="middle"
                         class="node-num num-transfer"
+                        fill="var(--text-sec)">{pt.stopNumber}</text
                     >
-                        <!-- Top arrow pointing right -->
-                        <path d="M16 3l4 4-4 4M20 7H4" />
-                        <!-- Bottom arrow pointing left -->
-                        <path d="M8 21l-4-4 4-4M4 17h16" />
-                    </svg>
                 {:else}
                     <circle
                         cx={pt.x}
@@ -508,14 +496,16 @@
 <style>
     @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap");
 
+    :global(html),
     :global(body) {
+        width: 100%;
+        height: 100%;
         margin: 0;
         padding: 0;
         overflow: hidden;
         background-color: transparent !important;
     }
 
-    /* LIGHT MODE DEFAULTS */
     :root {
         --text-main: #f3f4f6;
         --text-sec: #1a1c29;
@@ -523,7 +513,7 @@
         --term-text: #1a1c29;
         --border-color: #3b4054;
         --node-base: #161925;
-        --node-bg: #1a1c29; /* ← ADD THIS */
+        --node-bg: #1a1c29;
         --node-highlight: #e2e4e9;
         --grid-color: rgba(0, 0, 0, 0.08);
     }
@@ -534,7 +524,7 @@
             --text-sec: #f3f4f6;
             --border-color: #3b4054;
             --node-base: #161925;
-            --node-bg: #1a1c29; /* ← ADD THIS */
+            --node-bg: #1a1c29;
             --node-highlight: #e2e4e9;
             --grid-color: rgba(255, 255, 255, 0.05);
             --text-inv: black;
@@ -542,15 +532,19 @@
     }
 
     .canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
         overflow: hidden;
-        width: 100vw;
-        height: 100vh;
         background-color: transparent !important;
         background-image: radial-gradient(
             var(--grid-color) 1.5px,
             transparent 1.5px
         );
-        position: relative;
         touch-action: none;
         -webkit-user-select: none;
         user-select: none;
@@ -572,8 +566,6 @@
         font-size: 14px;
     }
     .num-transfer {
-        padding: 10px;
-        margin: 10px;
         font-size: 11px;
     }
     .num-stop {
