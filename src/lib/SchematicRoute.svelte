@@ -507,36 +507,27 @@
 
     /* LIGHT MODE DEFAULTS */
     :root {
-        /* These flip based on theme */ /* Station labels are Dark in light mode */
         --text-main: #f3f4f6;
         --text-sec: #1a1c29;
-        --border-color: #1a1c29; /* Standard stop border is Dark in light mode */
-
-        /* These NEVER flip because the node backgrounds are consistent */
-        --text-inv: #ffffff; /* Always white (for inside dark pills) */
-        --term-text: #1a1c29; /* Always dark (for inside light terminal circles) */
-        --node-base: #1a1c29; /* Always dark (standard/transfer fill) */
-        --node-highlight: #2b2d42; /* Always light gray (terminal fill & transfer border) */
-
+        --border-color: #1a1c29;
+        --text-inv: #1a1c29;
+        --term-text: #1a1c29;
+        --node-base: #1a1c29;
+        --node-bg: #ffffff; /* ← ADD THIS */
+        --node-highlight: #e2e4e9; /* ← lighten this for light mode */
         --grid-color: rgba(0, 0, 0, 0.08);
     }
 
-    /* DARK MODE OVERRIDES */
     @media (prefers-color-scheme: dark) {
         :root {
-            /* Flips to light for dark backgrounds */
-            --text-main: #1a1c29; /* Station labels are Light in dark mode */
+            --text-main: #1a1c29;
             --text-sec: #f3f4f6;
-            --border-color: #3b4054; /* Standard stop border becomes lighter gray to stand out */
-
-            /* Node base shifts slightly to match dark themes better, but stays dark */
+            --border-color: #3b4054;
             --node-base: #161925;
-            --node-base: #161925;
-
+            --node-bg: #1a1c29; /* ← ADD THIS */
+            --node-highlight: #e2e4e9;
             --grid-color: rgba(255, 255, 255, 0.05);
             --text-inv: black;
-            --node-highlight: #e2e4e9;
-            /* --text-inv, --term-text, and --node-highlight remain untouched! */
         }
     }
 
