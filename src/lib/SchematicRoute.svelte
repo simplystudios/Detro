@@ -182,16 +182,16 @@
         scale = 1;
         initialScale = scale;
 
+        const statusBarOffset = window.androidStatusBarHeight || 80; // passed from Android or fallback
+
         tx = canvasW / 2 - pt.x * scale;
-        ty = canvasH / 2 - pt.y * scale;
+        ty = canvasH / 2 + statusBarOffset / 2 - pt.y * scale;
 
         isAnimating = true;
         setTimeout(() => {
             isAnimating = false;
         }, 400);
 
-        // 👇 NEW: Send the station name to Android!
-        // We check if "AndroidBridge" exists so the app doesn't crash if opened in a normal browser
         if (window.AndroidBridge && window.AndroidBridge.onStationChanged) {
             window.AndroidBridge.onStationChanged(pt.name);
         }
