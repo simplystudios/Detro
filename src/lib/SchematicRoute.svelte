@@ -520,7 +520,7 @@
 
     @media (prefers-color-scheme: dark) {
         :root {
-            --text-main: #1a1c29;
+            --text-main: #f3f4f6;
             --text-sec: #f3f4f6;
             --border-color: #3b4054;
             --node-base: #161925;
