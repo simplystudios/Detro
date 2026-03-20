@@ -142,8 +142,10 @@
         };
     })();
 
+    // THE FIX: Use strictly Svelte's bound container dimensions
     let canvasW = 0;
     let canvasH = 0;
+
     let scale = 1.5;
     let tx = 0,
         ty = 0;
@@ -151,11 +153,16 @@
     let currentStationIndex = 0;
     let initialScale = 1.5;
 
-    // THE FIX: Constantly watch the WebView dimensions. If Android resizes it, re-center instantly!
+    // ================= DEV TOOLS STATE START =================
+    let devFocusScale = 1.5;
+    // =========================================================
+
+    // THE FIX: Automatically re-center if the Sketchware WebView resizes
+    // (e.g. going from 0px height on load to full height)
     let lastW = 0,
         lastH = 0;
     $: if (layout && canvasW > 0 && canvasH > 0) {
-        if (Math.abs(canvasW - lastW) > 10 || Math.abs(canvasH - lastH) > 10) {
+        if (Math.abs(canvasW - lastW) > 5 || Math.abs(canvasH - lastH) > 5) {
             lastW = canvasW;
             lastH = canvasH;
             if (!panning) {
@@ -164,7 +171,6 @@
         }
     }
 
-    // Reset current station on new route
     let lastRouteKey = "";
     $: if (layout) {
         const key =
@@ -174,30 +180,26 @@
         if (key !== lastRouteKey) {
             lastRouteKey = key;
             currentStationIndex = 0;
-            // Wait for DOM
             setTimeout(() => centerOnStation(0), 50);
         }
     }
 
     function centerOnStation(index) {
-        // Grab the TRUE dimensions directly from the window
-        const w = window.innerWidth;
-        const h = window.innerHeight;
-
-        if (!layout || !layout.pts[index] || w === 0 || h === 0) return;
+        if (!layout || !layout.pts[index] || canvasW === 0 || canvasH === 0)
+            return;
         const pt = layout.pts[index];
 
         scale = devFocusScale;
         initialScale = scale;
 
-        // Check if Android passed the status bar height, default to 0 if not
-        const statusBarOffset = window.androidStatusBarHeight || 0;
+        // Grab status bar offset from Java (defaults to 0 if not sent)
+        const sbOffset = window.androidStatusBarHeight || 0;
 
-        // 1. Calculate X normally
-        tx = w / 2 - pt.x * scale;
+        // Push the map down slightly because the text is above the node
+        const visualOffset = 25;
 
-        // 2. Calculate Y and push it down by exactly half the status bar height!
-        ty = h / 2 - pt.y * scale + statusBarOffset / 2;
+        tx = canvasW / 2 - pt.x * scale;
+        ty = canvasH / 2 - pt.y * scale + sbOffset / 2 + visualOffset;
 
         isAnimating = true;
         setTimeout(() => (isAnimating = false), 400);
@@ -207,21 +209,26 @@
         }
     }
 
+    function nextStationLocal() {
+        if (layout && currentStationIndex < layout.pts.length - 1) {
+            currentStationIndex++;
+            centerOnStation(currentStationIndex);
+        }
+    }
+
+    function prevStationLocal() {
+        if (layout && currentStationIndex > 0) {
+            currentStationIndex--;
+            centerOnStation(currentStationIndex);
+        }
+    }
+
     onMount(() => {
-        window.nextStation = () => {
-            if (layout && currentStationIndex < layout.pts.length - 1) {
-                currentStationIndex++;
-                centerOnStation(currentStationIndex);
-            }
-        };
-        window.prevStation = () => {
-            if (layout && currentStationIndex > 0) {
-                currentStationIndex--;
-                centerOnStation(currentStationIndex);
-            }
-        };
+        window.nextStation = nextStationLocal;
+        window.prevStation = prevStationLocal;
     });
 
+    // ── PAN / ZOOM ──
     let panning = false;
     let sx = 0,
         sy = 0,
@@ -506,6 +513,29 @@
                 {/if}
             {/each}
         </svg>
+
+        <div
+            class="dev-panel"
+            on:mousedown|stopPropagation
+            on:touchstart|stopPropagation
+        >
+            <b>Dev Tools</b>
+            <label>
+                Focus Zoom: {devFocusScale.toFixed(2)}x
+                <input
+                    type="range"
+                    min="0.3"
+                    max="3"
+                    step="0.1"
+                    bind:value={devFocusScale}
+                    on:input={() => centerOnStation(currentStationIndex)}
+                />
+            </label>
+            <div class="dev-buttons">
+                <button on:click={prevStationLocal}>Prev</button>
+                <button on:click={nextStationLocal}>Next</button>
+            </div>
+        </div>
     </div>
 {/if}
 
