@@ -2,7 +2,7 @@ import { json } from "@sveltejs/kit";
 
 /* ---------- LOAD DATA ---------- */
 
-const res = await fetch("https://detroweb.vercel.app/metrolines.json");
+const res = await fetch("http://localhost:5173/metrolines.json");
 const lines = await res.json();
 
 const interchanges = [

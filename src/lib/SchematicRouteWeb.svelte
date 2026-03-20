@@ -10,6 +10,7 @@
         "Blue line branch": "#1565C0",
         "Blue line main": "#1565C0",
         "Green line": "#2E7D32",
+        "Green line branch": "#2E7D32",
         "Voilet line": "#6A1B9A",
         "Orange line": "#E65100",
         "Magenta line": "#AD1457",
