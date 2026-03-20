@@ -159,6 +159,25 @@
     let isAnimating = false;
     let currentStationIndex = 0;
 
+    /**
+     * Returns the status-bar offset to use when centering a station.
+     *
+     * - Android WebView: `window.androidStatusBarHeight` is injected by the
+     *   native app via JavascriptInterface, so we use that value.
+     * - Everything else (browser, desktop, web): use 0 so the station sits
+     *   exactly in the vertical centre of the canvas.
+     */
+    function getStatusBarOffset() {
+        // Only trust the Android value when it has actually been set by the
+        // native bridge (i.e. it's a positive number, not just the property
+        // being undefined/null/0 in a normal browser).
+        const androidValue = window.androidStatusBarHeight;
+        if (typeof androidValue === "number" && androidValue > 0) {
+            return androidValue;
+        }
+        return 0;
+    }
+
     $: if (layout && canvasW && canvasH) {
         const currentRouteKey =
             route?.route?.[0]?.station +
@@ -169,7 +188,7 @@
             currentStationIndex = 0;
             setTimeout(() => {
                 centerOnStation(0);
-            }, 50); // Center on start
+            }, 50);
             lastCenteredRoute = currentRouteKey;
         }
     }
@@ -177,12 +196,12 @@
     function centerOnStation(index) {
         if (!layout || !layout.pts[index] || canvasW === 0 || canvasH === 0)
             return;
-        const pt = layout.pts[index];
 
+        const pt = layout.pts[index];
         scale = 1;
         initialScale = scale;
 
-        const statusBarOffset = window.androidStatusBarHeight || 80; // passed from Android or fallback
+        const statusBarOffset = getStatusBarOffset();
 
         tx = canvasW / 2 - pt.x * scale;
         ty = canvasH / 2 + statusBarOffset / 2 - pt.y * scale;
@@ -456,9 +475,7 @@
                         stroke-linejoin="round"
                         class="node-num num-transfer"
                     >
-                        <!-- Top arrow pointing right -->
                         <path d="M16 3l4 4-4 4M20 7H4" />
-                        <!-- Bottom arrow pointing left -->
                         <path d="M8 21l-4-4 4-4M4 17h16" />
                     </svg>
                 {:else}
@@ -515,7 +532,6 @@
         background-color: transparent !important;
     }
 
-    /* LIGHT MODE DEFAULTS */
     :root {
         --text-main: #f3f4f6;
         --text-sec: #1a1c29;
@@ -523,7 +539,7 @@
         --term-text: #1a1c29;
         --border-color: #3b4054;
         --node-base: #161925;
-        --node-bg: #1a1c29; /* ← ADD THIS */
+        --node-bg: #1a1c29;
         --node-highlight: #e2e4e9;
         --grid-color: rgba(0, 0, 0, 0.08);
     }
@@ -534,7 +550,7 @@
             --text-sec: #f3f4f6;
             --border-color: #3b4054;
             --node-base: #161925;
-            --node-bg: #1a1c29; /* ← ADD THIS */
+            --node-bg: #1a1c29;
             --node-highlight: #e2e4e9;
             --grid-color: rgba(255, 255, 255, 0.05);
             --text-inv: black;
@@ -543,8 +559,8 @@
 
     .canvas {
         overflow: hidden;
-        width: 100vw;
-        height: 100vh;
+        width: 100%;
+        height: 100%;
         background-color: transparent !important;
         background-image: radial-gradient(
             var(--grid-color) 1.5px,

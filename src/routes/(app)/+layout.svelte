@@ -3,7 +3,7 @@
 
     // Props for icons
     let iconSize = 20;
-    let iconColor = "#1a1a1a";
+    let iconColor = "#ffffff";
 </script>
 
 <div class="app-container">
@@ -55,7 +55,7 @@
 
     .header-container {
         /* Glassmorphism Effect */
-        background-color: rgba(255, 255, 255, 0.8);
+        background: rgba(19, 19, 22, 0.88);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         padding: 100px;
@@ -94,7 +94,7 @@
         font-weight: 800;
         font-size: 1.3rem;
         letter-spacing: -0.04em;
-        color: #000;
+        color: white;
         margin: 0;
         line-height: 1;
     }
