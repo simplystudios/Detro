@@ -675,10 +675,10 @@
                     </div>
                 </div>
             {:else}
-                <div class="no-location">
+                <!-- <div class="no-location">
                     <img width="120" height="120" src="/noloc.svg" alt="" />
                     <p>Location access required</p>
-                </div>
+                </div> -->
             {/if}
 
             <!-- Route result -->
