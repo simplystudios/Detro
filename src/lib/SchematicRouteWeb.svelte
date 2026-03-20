@@ -148,7 +148,9 @@
         };
     })();
 
-    // ── INTERACTIVITY & CENTERING LOGIC ──
+    // â”€â”€ INTERACTIVITY & CENTERING LOGIC â”€â”€
+    // No longer using bind:clientWidth/clientHeight â€” unreliable on Android WebView.
+    // We read window.innerWidth/Height directly instead.
     let canvasW = 0;
     let canvasH = 0;
     let scale = 1;
@@ -158,25 +160,6 @@
 
     let isAnimating = false;
     let currentStationIndex = 0;
-
-    /**
-     * Returns the status-bar offset to use when centering a station.
-     *
-     * - Android WebView: `window.androidStatusBarHeight` is injected by the
-     *   native app via JavascriptInterface, so we use that value.
-     * - Everything else (browser, desktop, web): use 0 so the station sits
-     *   exactly in the vertical centre of the canvas.
-     */
-    function getStatusBarOffset() {
-        // Only trust the Android value when it has actually been set by the
-        // native bridge (i.e. it's a positive number, not just the property
-        // being undefined/null/0 in a normal browser).
-        const androidValue = window.androidStatusBarHeight;
-        if (typeof androidValue === "number" && androidValue > 0) {
-            return androidValue;
-        }
-        return 0;
-    }
 
     $: if (layout && canvasW && canvasH) {
         const currentRouteKey =
@@ -194,29 +177,42 @@
     }
 
     function centerOnStation(index) {
-        if (!layout || !layout.pts[index] || canvasW === 0 || canvasH === 0)
-            return;
-
+        if (!layout || !layout.pts[index]) return;
         const pt = layout.pts[index];
+
         scale = 1;
         initialScale = scale;
 
-        const statusBarOffset = getStatusBarOffset();
+        // Use window dimensions directly â€” reliable on Android WebView
+        // unlike bind:clientWidth/Height which can read 0 or wrong values
+        const w = window.innerWidth;
+        const h = window.innerHeight;
 
-        tx = canvasW / 2 - pt.x * scale;
-        ty = canvasH / 2 + statusBarOffset / 2 - pt.y * scale;
+        tx = w / 2 - pt.x * scale;
+        ty = h / 2 - pt.y * scale;
 
         isAnimating = true;
         setTimeout(() => {
             isAnimating = false;
         }, 400);
 
-        if (window.AndroidBridge && window.AndroidBridge.onStationChanged) {
+        if (window.AndroidBridge?.onStationChanged) {
             window.AndroidBridge.onStationChanged(pt.name);
         }
     }
 
     onMount(() => {
+        // Set initial dimensions from window â€” avoids the Android bind timing bug
+        canvasW = window.innerWidth;
+        canvasH = window.innerHeight;
+
+        // ResizeObserver keeps dimensions fresh on orientation change, keyboard open, etc.
+        const ro = new ResizeObserver(() => {
+            canvasW = window.innerWidth;
+            canvasH = window.innerHeight;
+        });
+        ro.observe(document.documentElement);
+
         window.nextStation = () => {
             if (layout && currentStationIndex < layout.pts.length - 1) {
                 currentStationIndex++;
@@ -229,6 +225,8 @@
                 centerOnStation(currentStationIndex);
             }
         };
+
+        return () => ro.disconnect();
     });
 
     let panning = false;
@@ -324,8 +322,6 @@
 {#if route && layout}
     <div
         class="canvas"
-        bind:clientWidth={canvasW}
-        bind:clientHeight={canvasH}
         style="cursor:{panning
             ? 'grabbing'
             : 'grab'}; background-position: {tx}px {ty}px; background-size: {24 *
@@ -559,8 +555,9 @@
 
     .canvas {
         overflow: hidden;
-        width: 100%;
-        height: 100%;
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh; /* dynamic viewport height â€” fixes Android WebView status bar offset */
         background-color: transparent !important;
         background-image: radial-gradient(
             var(--grid-color) 1.5px,
