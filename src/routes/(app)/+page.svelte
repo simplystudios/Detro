@@ -2,7 +2,7 @@
     import LeafletMap from "$lib/LeafletMap.svelte";
     import { onMount } from "svelte";
     import Autocomplete from "@smui-extra/autocomplete";
-    import SchematicRoute from "$lib/SchematicRoute.svelte";
+    import SchematicRouteWeb from "$lib/SchematicRouteWeb.svelte";
     import Snackbar, { Actions } from "@smui/snackbar";
     import { Label } from "@smui/button";
     import html2canvas from "html2canvas";
@@ -685,7 +685,7 @@
             {#if routeFound && frome && toe !== "undefined"}
                 <!-- Schematic -->
                 <div class="schematic-wrap">
-                    <SchematicRoute route={rawroute} />
+                    <SchematicRouteWeb route={rawroute} />
                 </div>
 
                 <!-- Summary stats card -->
