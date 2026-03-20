@@ -449,7 +449,7 @@
                         dominant-baseline="central"
                         text-anchor="middle"
                         class="node-num num-transfer"
-                        fill="var(--text-sec)">{pt.stopNumber}</text
+                        fill="var(--text-main)">{pt.stopNumber}</text
                     >
                 {:else}
                     <circle
@@ -466,7 +466,7 @@
                         dominant-baseline="central"
                         text-anchor="middle"
                         class="node-num num-stop"
-                        fill="var(--text-sec)">{pt.stopNumber}</text
+                        fill="var(--text-main)">{pt.stopNumber}</text
                     >
                 {/if}
 
@@ -509,13 +509,13 @@
     :root {
         --text-main: #f3f4f6;
         --text-sec: #1a1c29;
-        --border-color: #1a1c29;
         --text-inv: #1a1c29;
         --term-text: #1a1c29;
-        --node-base: #1a1c29;
-        --node-bg: #ffffff; /* ← ADD THIS */
-        --node-highlight: #e2e4e9; /* ← lighten this for light mode */
-        --grid-color: rgba(0, 0, 0, 0.08);
+        --border-color: #3b4054;
+        --node-base: #161925;
+        --node-bg: #1a1c29; /* ← ADD THIS */
+        --node-highlight: #e2e4e9;
+        --grid-color: rgba(255, 255, 255, 0.05);
     }
 
     @media (prefers-color-scheme: dark) {
