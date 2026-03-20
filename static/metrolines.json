@@ -67,11 +67,13 @@
     "IFFCO Chowk",
     "Huda City Centre"
   ],
-  "Green line": [
+  "Green line branch": [
     "Inderlok",
     "Kirti Nagar",
     "Satguru Ram Singh Marg",
-    "Ashok Park Main",
+    "Ashok Park Main"
+  ],
+  "Green line": [
     "Punjabi Bagh",
     "Shivaji Park",
     "Madipur",
@@ -274,7 +276,12 @@
     "IGI Airport",
     "Dwarka Sector - 21"
   ],
-  "Gray line": ["Dwarka", "Nangli", "Najafgarh", "Dhansa Bus Stand"],
+  "Gray line": [
+    "Dwarka",
+    "Nangli",
+    "Najafgarh",
+    "Dhansa Bus Stand"
+  ],
   "Aqua line": [
     "Noida Sector 51",
     "Noida Sector 50",
