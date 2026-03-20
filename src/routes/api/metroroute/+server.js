@@ -2,9 +2,6 @@ import { json } from "@sveltejs/kit";
 
 /* ---------- LOAD DATA ---------- */
 
-const res = await fetch("/metrolines.json");
-const lines = await res.json();
-
 const interchanges = [
   { from: "Noida Sec-52", to: "Noida Sector 51", note: "Walkway transfer" },
   {
@@ -40,8 +37,6 @@ function buildGraph(lines) {
 
   return g;
 }
-
-const graph = buildGraph(lines);
 
 /* ---------- BFS ---------- */
 
@@ -114,9 +109,14 @@ function buildRouteSteps(route, segmentLines, transferStations) {
 
 /* ---------- API ---------- */
 
-export function GET({ url }) {
+export async function GET({ url, fetch }) {
   const from = url.searchParams.get("from");
   const to = url.searchParams.get("to");
+
+  const response = await fetch("/metrolines.json");
+  const lines = await response.json();
+
+  const graph = buildGraph(lines);
 
   if (!from || !to) {
     return json({ error: "Missing from or to parameter" }, { status: 400 });
