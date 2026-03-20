@@ -142,20 +142,31 @@
         };
     })();
 
-    // THE FIX: Restored reactive canvas measuring
     let canvasW = 0;
     let canvasH = 0;
-
-    let scale = 1.5; // Gives it a nice zoom by default
+    let scale = 1.5;
     let tx = 0,
         ty = 0;
     let isAnimating = false;
     let currentStationIndex = 0;
     let initialScale = 1.5;
 
-    // THE FIX: Wait until canvasW and canvasH are > 0 (meaning WebView is fully loaded)
-    let lastRouteKey = "";
+    // THE FIX: Constantly watch the WebView dimensions. If Android resizes it, re-center instantly!
+    let lastW = 0,
+        lastH = 0;
     $: if (layout && canvasW > 0 && canvasH > 0) {
+        if (Math.abs(canvasW - lastW) > 10 || Math.abs(canvasH - lastH) > 10) {
+            lastW = canvasW;
+            lastH = canvasH;
+            if (!panning) {
+                setTimeout(() => centerOnStation(currentStationIndex), 50);
+            }
+        }
+    }
+
+    // Reset current station on new route
+    let lastRouteKey = "";
+    $: if (layout) {
         const key =
             route?.route?.[0]?.station +
             "-" +
@@ -163,7 +174,7 @@
         if (key !== lastRouteKey) {
             lastRouteKey = key;
             currentStationIndex = 0;
-            // 50ms buffer guarantees Android has drawn the frame
+            // Wait for DOM
             setTimeout(() => centerOnStation(0), 50);
         }
     }
@@ -173,10 +184,9 @@
             return;
         const pt = layout.pts[index];
 
-        scale = 1.5; // You can change this zoom level if you want
+        scale = 1.5;
         initialScale = scale;
 
-        // THE FIX: Included "* scale" so it centers perfectly regardless of zoom
         tx = canvasW / 2 - pt.x * scale;
         ty = canvasH / 2 - pt.y * scale;
 
@@ -203,7 +213,6 @@
         };
     });
 
-    // ── PAN / ZOOM ──
     let panning = false;
     let sx = 0,
         sy = 0,
@@ -241,7 +250,6 @@
     function onMU() {
         panning = false;
     }
-
     function getTouchDist(t1, t2) {
         return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
     }
@@ -495,7 +503,11 @@
 <style>
     @import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700;800&display=swap");
 
+    /* THE FIX: Force the body to fill the viewport precisely */
+    :global(html),
     :global(body) {
+        width: 100%;
+        height: 100%;
         margin: 0;
         padding: 0;
         overflow: hidden;
@@ -527,16 +539,20 @@
     }
 
     .canvas {
+        /* THE FIX: Absolute positioning forces it to perfectly measure the Sketchware container */
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
         overflow: hidden;
-        /* THE FIX: Reverted to vw/vh to prevent Sketchware collapsing height */
-        width: 100vw;
-        height: 100vh;
         background-color: transparent !important;
         background-image: radial-gradient(
             var(--grid-color) 1.5px,
             transparent 1.5px
         );
-        position: relative;
         touch-action: none;
         -webkit-user-select: none;
         user-select: none;
@@ -564,20 +580,5 @@
     }
     .node-label {
         paint-order: stroke fill;
-    }
-
-    /* CSS ANIMATION FOR THE ARROW */
-    @keyframes bop {
-        0% {
-            transform: translateY(0px);
-        }
-        100% {
-            transform: translateY(-12px);
-        }
-    }
-
-    .goofy-arrow {
-        animation: bop 0.4s infinite alternate
-            cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
 </style>
