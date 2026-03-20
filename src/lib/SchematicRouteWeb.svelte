@@ -198,8 +198,17 @@
         // Push the map down slightly because the text is above the node
         const visualOffset = 25;
 
+        // 👇 HERE IS YOUR MANUAL NUDGE 👇
+        const manualNudge = 20;
+
         tx = canvasW / 2 - pt.x * scale;
-        ty = canvasH / 2 - pt.y * scale + sbOffset / 2 + visualOffset;
+        // Added the manualNudge to the Y-axis (ty) to push it down further
+        ty =
+            canvasH / 2 -
+            pt.y * scale +
+            sbOffset / 2 +
+            visualOffset +
+            manualNudge;
 
         isAnimating = true;
         setTimeout(() => (isAnimating = false), 400);
@@ -208,7 +217,6 @@
             window.AndroidBridge.onStationChanged(pt.name);
         }
     }
-
     function nextStationLocal() {
         if (layout && currentStationIndex < layout.pts.length - 1) {
             currentStationIndex++;
