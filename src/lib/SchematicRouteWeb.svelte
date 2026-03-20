@@ -86,12 +86,10 @@
             const color = LINE_COLORS[segLines[i]] ?? "#555";
             const dy = b.y - a.y;
             const dx = b.x - a.x;
-
             let d =
                 Math.abs(dy) < 2
                     ? `M${a.x} ${a.y} L${b.x} ${b.y}`
                     : `M${a.x} ${a.y} L${a.x + (dx - Math.abs(dy))} ${a.y} L${b.x} ${b.y}`;
-
             segs.push({ d, color, fromIdx: i, toIdx: i + 1 });
         }
 
@@ -101,25 +99,21 @@
 
         for (let i = 0; i <= segLines.length; i++) {
             const lineName = i < segLines.length ? segLines[i] : null;
-
             if (lineName !== currentLine) {
                 if (currentLine !== null) {
                     let maxHLen = 0;
                     let bestCenter = { x: 0, y: 0 };
-
                     for (let j = lineStartIdx; j < i; j++) {
                         const a = pts[j];
                         const b = pts[j + 1];
                         const dx = b.x - a.x;
                         const dy = b.y - a.y;
                         const hLen = Math.abs(dy) < 2 ? dx : dx - Math.abs(dy);
-
                         if (hLen > maxHLen) {
                             maxHLen = hLen;
                             bestCenter = { x: a.x + hLen / 2, y: a.y };
                         }
                     }
-
                     lineLabels.push({
                         name: currentLine,
                         color: LINE_COLORS[currentLine] ?? "#555",
@@ -148,45 +142,60 @@
         };
     })();
 
-    // â”€â”€ INTERACTIVITY & CENTERING LOGIC â”€â”€
-    // No longer using bind:clientWidth/clientHeight â€” unreliable on Android WebView.
-    // We read window.innerWidth/Height directly instead.
-    let canvasW = 0;
-    let canvasH = 0;
+    // â”€â”€ CENTERING â”€â”€
+    // Root cause of Android off-center bug:
+    //   bind:clientWidth/Height fires too late or returns 0
+    //   window.innerWidth/Height can be wrong before WebView finishes layout
+    // Fix: bind:this on the element + getBoundingClientRect() at call time.
+    // Double-rAF ensures the browser has finished a paint cycle before we measure.
+
+    let canvasEl = null;
     let scale = 1;
     let tx = 0,
         ty = 0;
     let lastCenteredRoute = "";
-
     let isAnimating = false;
     let currentStationIndex = 0;
+    let initialScale = 1;
+    let mounted = false;
 
-    $: if (layout && canvasW && canvasH) {
+    $: if (layout && mounted) {
         const currentRouteKey =
             route?.route?.[0]?.station +
             "-" +
             route?.route?.[route.route.length - 1]?.station;
 
         if (lastCenteredRoute !== currentRouteKey) {
-            currentStationIndex = 0;
-            setTimeout(() => {
-                centerOnStation(0);
-            }, 50);
             lastCenteredRoute = currentRouteKey;
+            currentStationIndex = 0;
+            // Double rAF: first frame commits the DOM, second frame has real layout sizes
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    centerOnStation(0);
+                });
+            });
         }
+    }
+
+    function getCanvasSize() {
+        if (canvasEl) {
+            const r = canvasEl.getBoundingClientRect();
+            if (r.width > 0 && r.height > 0) return { w: r.width, h: r.height };
+        }
+        // Fallback â€” clientWidth/clientHeight are more reliable than innerWidth on WebView
+        return {
+            w: document.documentElement.clientWidth,
+            h: document.documentElement.clientHeight,
+        };
     }
 
     function centerOnStation(index) {
         if (!layout || !layout.pts[index]) return;
         const pt = layout.pts[index];
+        const { w, h } = getCanvasSize();
 
         scale = 1;
-        initialScale = scale;
-
-        // Use window dimensions directly â€” reliable on Android WebView
-        // unlike bind:clientWidth/Height which can read 0 or wrong values
-        const w = window.innerWidth;
-        const h = window.innerHeight;
+        initialScale = 1;
 
         tx = w / 2 - pt.x * scale;
         ty = h / 2 - pt.y * scale;
@@ -202,16 +211,7 @@
     }
 
     onMount(() => {
-        // Set initial dimensions from window â€” avoids the Android bind timing bug
-        canvasW = window.innerWidth;
-        canvasH = window.innerHeight;
-
-        // ResizeObserver keeps dimensions fresh on orientation change, keyboard open, etc.
-        const ro = new ResizeObserver(() => {
-            canvasW = window.innerWidth;
-            canvasH = window.innerHeight;
-        });
-        ro.observe(document.documentElement);
+        mounted = true;
 
         window.nextStation = () => {
             if (layout && currentStationIndex < layout.pts.length - 1) {
@@ -226,16 +226,24 @@
             }
         };
 
+        // Re-center on orientation change / resize
+        const ro = new ResizeObserver(() => {
+            requestAnimationFrame(() => {
+                centerOnStation(currentStationIndex);
+            });
+        });
+        if (canvasEl) ro.observe(canvasEl);
+
         return () => ro.disconnect();
     });
 
+    // â”€â”€ PAN / ZOOM â”€â”€
     let panning = false;
     let sx = 0,
         sy = 0,
         stx = 0,
         sty = 0;
     let initialDist = 0;
-    let initialScale = 1;
 
     function onWheel(e) {
         isAnimating = false;
@@ -266,10 +274,10 @@
     function onMU() {
         panning = false;
     }
+
     function getTouchDist(t1, t2) {
         return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
     }
-
     function onTS(e) {
         isAnimating = false;
         if (e.touches.length === 2) {
@@ -287,10 +295,10 @@
     function onTM(e) {
         if (e.touches.length === 2) {
             e.preventDefault();
-            const currentDist = getTouchDist(e.touches[0], e.touches[1]);
+            const d = getTouchDist(e.touches[0], e.touches[1]);
             scale = Math.min(
                 6,
-                Math.max(0.3, initialScale * (currentDist / initialDist)),
+                Math.max(0.3, initialScale * (d / initialDist)),
             );
         } else if (e.touches.length === 1 && panning) {
             tx = stx + e.touches[0].clientX - sx;
@@ -322,10 +330,11 @@
 {#if route && layout}
     <div
         class="canvas"
-        style="cursor:{panning
-            ? 'grabbing'
-            : 'grab'}; background-position: {tx}px {ty}px; background-size: {24 *
-            scale}px {24 * scale}px; transition: {isAnimating
+        bind:this={canvasEl}
+        style="cursor:{panning ? 'grabbing' : 'grab'};
+               background-position: {tx}px {ty}px;
+               background-size: {24 * scale}px {24 * scale}px;
+               transition: {isAnimating
             ? 'background-position 0.4s ease-out, background-size 0.4s ease-out'
             : 'none'};"
         on:wheel={onWheel}
@@ -343,14 +352,15 @@
             width={layout.svgW}
             height={layout.svgH}
             viewBox="0 0 {layout.svgW} {layout.svgH}"
-            style="display:block; transform-origin:0 0; transform:translate({tx}px,{ty}px) scale({scale}); transition: {isAnimating
+            style="display:block; transform-origin:0 0;
+                   transform:translate({tx}px,{ty}px) scale({scale});
+                   transition: {isAnimating
                 ? 'transform 0.4s ease-out'
                 : 'none'};"
         >
             <defs>
                 <mask id="track-cutout">
                     <rect width="100%" height="100%" fill="white" />
-
                     {#each layout.lineLabels as lbl}
                         <rect
                             x={lbl.x - lbl.width / 2 - 4}
@@ -361,12 +371,8 @@
                             fill="black"
                         />
                     {/each}
-
                     {#each layout.pts as pt, i}
-                        {@const isFirst = i === 0}
-                        {@const isLast = i === layout.pts.length - 1}
-                        {@const isTerm = isFirst || isLast}
-
+                        {@const isTerm = i === 0 || i === layout.pts.length - 1}
                         {#if isTerm}
                             <circle
                                 cx={pt.x}
@@ -424,8 +430,10 @@
                     text-anchor="middle"
                     font-size="11"
                     font-weight="700"
-                    fill="white">{lbl.name}</text
+                    fill="white"
                 >
+                    {lbl.name}
+                </text>
             {/each}
 
             {#each layout.pts as pt, i}
@@ -509,9 +517,8 @@
                             : lbl.side === "below"
                               ? `translate(0, ${isTerm ? TERM_R + 20 : pt.isTransfer ? XFER_H / 2 + 20 : STOP_R + 20})`
                               : `translate(${pt.x},${pt.y}) rotate(${lbl.rotate}) translate(${STOP_R + 8}, 4) rotate(${-lbl.rotate}) translate(-${pt.x},-${pt.y})`}
+                        >{pt.name}</text
                     >
-                        {pt.name}
-                    </text>
                 {/if}
             {/each}
         </svg>
@@ -557,7 +564,7 @@
         overflow: hidden;
         width: 100vw;
         height: 100vh;
-        height: 100dvh; /* dynamic viewport height â€” fixes Android WebView status bar offset */
+        height: 100dvh;
         background-color: transparent !important;
         background-image: radial-gradient(
             var(--grid-color) 1.5px,
@@ -580,7 +587,6 @@
         font-weight: 800;
         pointer-events: none;
     }
-
     .num-terminal {
         font-size: 14px;
     }
@@ -592,7 +598,6 @@
     .num-stop {
         font-size: 10px;
     }
-
     .node-label {
         paint-order: stroke fill;
     }
