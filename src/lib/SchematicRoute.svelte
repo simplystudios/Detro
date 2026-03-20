@@ -23,7 +23,7 @@
     const STOP_R = 9;
     const TERM_R = 14;
     const XFER_W = 30;
-    const XFER_H = 18;
+    const XFER_H = 30;
     const V_SHIFT = 64;
     const PAD_X = 80;
     const PAD_Y = 100;
@@ -443,14 +443,24 @@
                         stroke="var(--node-highlight)"
                         stroke-width="2"
                     />
-                    <text
-                        x={pt.x}
-                        y={pt.y}
-                        dominant-baseline="central"
-                        text-anchor="middle"
+                    <svg
+                        x={pt.x - 8}
+                        y={pt.y - 8}
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="var(--text-main)"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
                         class="node-num num-transfer"
-                        fill="var(--text-main)">{pt.stopNumber}</text
                     >
+                        <!-- Top arrow pointing right -->
+                        <path d="M16 3l4 4-4 4M20 7H4" />
+                        <!-- Bottom arrow pointing left -->
+                        <path d="M8 21l-4-4 4-4M4 17h16" />
+                    </svg>
                 {:else}
                     <circle
                         cx={pt.x}
@@ -562,6 +572,8 @@
         font-size: 14px;
     }
     .num-transfer {
+        padding: 10px;
+        margin: 10px;
         font-size: 11px;
     }
     .num-stop {
