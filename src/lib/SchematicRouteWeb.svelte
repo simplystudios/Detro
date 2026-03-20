@@ -142,17 +142,20 @@
         };
     })();
 
-    let canvasEl = null;
-    let scale = 1;
+    // THE FIX: Restored reactive canvas measuring
+    let canvasW = 0;
+    let canvasH = 0;
+
+    let scale = 1.5; // Gives it a nice zoom by default
     let tx = 0,
         ty = 0;
     let isAnimating = false;
     let currentStationIndex = 0;
-    let initialScale = 1;
+    let initialScale = 1.5;
 
-    // Re-center on first station whenever the route prop changes
+    // THE FIX: Wait until canvasW and canvasH are > 0 (meaning WebView is fully loaded)
     let lastRouteKey = "";
-    $: if (layout && canvasEl) {
+    $: if (layout && canvasW > 0 && canvasH > 0) {
         const key =
             route?.route?.[0]?.station +
             "-" +
@@ -160,31 +163,32 @@
         if (key !== lastRouteKey) {
             lastRouteKey = key;
             currentStationIndex = 0;
-            requestAnimationFrame(() => centerOnStation(0));
+            // 50ms buffer guarantees Android has drawn the frame
+            setTimeout(() => centerOnStation(0), 50);
         }
     }
 
     function centerOnStation(index) {
-        if (!layout?.pts[index] || !canvasEl) return;
+        if (!layout || !layout.pts[index] || canvasW === 0 || canvasH === 0)
+            return;
         const pt = layout.pts[index];
-        const { width, height } = canvasEl.getBoundingClientRect();
 
-        scale = 1;
-        initialScale = 1;
-        // Simply place the station at the exact centre of the container
-        tx = width / 2 - pt.x;
-        ty = height / 2 - pt.y;
+        scale = 1.5; // You can change this zoom level if you want
+        initialScale = scale;
+
+        // THE FIX: Included "* scale" so it centers perfectly regardless of zoom
+        tx = canvasW / 2 - pt.x * scale;
+        ty = canvasH / 2 - pt.y * scale;
 
         isAnimating = true;
         setTimeout(() => (isAnimating = false), 400);
 
-        window.AndroidBridge?.onStationChanged?.(pt.name);
+        if (window.AndroidBridge && window.AndroidBridge.onStationChanged) {
+            window.AndroidBridge.onStationChanged(pt.name);
+        }
     }
 
     onMount(() => {
-        // Center on the first station once the element is in the DOM
-        requestAnimationFrame(() => centerOnStation(0));
-
         window.nextStation = () => {
             if (layout && currentStationIndex < layout.pts.length - 1) {
                 currentStationIndex++;
@@ -197,13 +201,6 @@
                 centerOnStation(currentStationIndex);
             }
         };
-
-        // Re-center on resize / orientation change
-        const ro = new ResizeObserver(() =>
-            requestAnimationFrame(() => centerOnStation(currentStationIndex)),
-        );
-        ro.observe(canvasEl);
-        return () => ro.disconnect();
     });
 
     // ── PAN / ZOOM ──
@@ -302,7 +299,8 @@
 {#if route && layout}
     <div
         class="canvas"
-        bind:this={canvasEl}
+        bind:clientWidth={canvasW}
+        bind:clientHeight={canvasH}
         style="cursor:{panning ? 'grabbing' : 'grab'};
                background-position: {tx}px {ty}px;
                background-size: {24 * scale}px {24 * scale}px;
@@ -530,8 +528,9 @@
 
     .canvas {
         overflow: hidden;
-        width: 100%;
-        height: 100%;
+        /* THE FIX: Reverted to vw/vh to prevent Sketchware collapsing height */
+        width: 100vw;
+        height: 100vh;
         background-color: transparent !important;
         background-image: radial-gradient(
             var(--grid-color) 1.5px,
@@ -565,5 +564,20 @@
     }
     .node-label {
         paint-order: stroke fill;
+    }
+
+    /* CSS ANIMATION FOR THE ARROW */
+    @keyframes bop {
+        0% {
+            transform: translateY(0px);
+        }
+        100% {
+            transform: translateY(-12px);
+        }
+    }
+
+    .goofy-arrow {
+        animation: bop 0.4s infinite alternate
+            cubic-bezier(0.25, 0.46, 0.45, 0.94);
     }
 </style>
