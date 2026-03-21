@@ -564,7 +564,7 @@
                                     font-weight="500"
                                     fill="var(--text-pill)"
                                 >
-                                    Change to {pt.transferTo}
+                                    Change here to {pt.transferTo}
                                 </text>
                             {/if}
                         </g>
