@@ -9,6 +9,11 @@ const interchanges = [
     to: "Dilli Haat - INA",
     note: "Internal transfer",
   },
+  {
+    from: "Maujpur - Babarpur",
+    to: "Maujpur - Babarpur",
+    note: "loop",
+  },
 ];
 
 /* ---------- GRAPH ---------- */

@@ -2,22 +2,63 @@
     import { onMount, onDestroy } from "svelte";
     import { browser } from "$app/environment";
     import { toValue, fromValue } from "$lib/store.js";
+    import "@m3e/web/all";
 
+    // schematic_data.js
+    export const schematicData = {
+        lines: [
+            {
+                id: "Yellow Line",
+                color: "#F5C800",
+                // The exact path the thick colored line takes on the grid
+                path: "M 50 20 L 50 150 L 80 180 L 150 180" 
+            },
+            {
+                id: "Blue Line",
+                color: "#1565C0",
+                path: "M 20 180 L 200 180"
+            }
+        ],
+        stations: [
+            { id: "vishwavidyalaya", name: "Vishwavidyalaya", x: 50, y: 20, isHub: false },
+            { id: "kashmere_gate", name: "Kashmere Gate", x: 50, y: 80, isHub: true },
+            { id: "rajiv_chowk", name: "Rajiv Chowk", x: 50, y: 150, isHub: true },
+            { id: "barakhamba", name: "Barakhamba", x: 80, y: 180, isHub: false }
+        ]
+    };
+    
     let mapElement;
     let map;
     let leaflet;
+    export let focusStation = ""; // Pass a station name string here
     let metrodata = [];
     let haloLayer;
     let markersMap = new Map();
     let toastMessage = "";
     let showToast = false;
 
+    $: if (focusStation && map && metrodata.length > 0) {
+        const stationData = metrodata.find((s) => s.stop_name === focusStation);
+        if (stationData) {
+            // Add a tiny delay to ensure Leaflet has finished rendering markers
+            setTimeout(() => {
+                zoomToStation(stationData);
+            }, 100);
+        }
+    }
+
     // Theme Configuration
-    let currentThemeKey = "light";
+    let currentThemeKey = "dark";
     const themes = {
         // --- Original & Standard ---
         light: {
             bg: "#fdfdfd",
+            halo: "#ffffff",
+            ui: "#2c3e50",
+            river: "#D4E6F1",
+        },
+        auto: {
+            bg: "var(--md-sys-color-background, #131316);",
             halo: "#ffffff",
             ui: "#2c3e50",
             river: "#D4E6F1",
@@ -167,7 +208,7 @@
     }
 
     function zoomToStation(station) {
-        map.flyTo([station.stop_lat, station.stop_lon], 16, { duration: 1.5 });
+        map.flyTo([station.stop_lat, station.stop_lon], 13, { duration: 1.5 });
         const marker = markersMap.get(station.stop_name);
         if (marker) {
             document
@@ -259,8 +300,7 @@
                     <div class="popup-container">
                         <strong>${station.stop_name}</strong>
                         <div class="popup-btns">
-                            <button class="tobtn" onclick="window.updateto('${station.stop_name}')">To</button>
-                            <button class="frombtn" onclick="window.updatefrom('${station.stop_name}')">From</button>
+
                         </div>
                     </div>
                 `);
@@ -293,13 +333,14 @@
 
 <main>
     <div class="header-controls">
-        <input
+        <!-- <input
             type="text"
             placeholder="Search..."
             bind:value={searchQuery}
             on:input={handleSearch}
-        />
-        <select bind:value={currentThemeKey} on:change={changeBackground}>
+        /> -->
+
+        <!-- <select bind:value={currentThemeKey} on:change={changeBackground}>
             <optgroup label="Standard">
                 <option value="light">Light</option>
                 <option value="dark">Dark</option>
@@ -325,7 +366,7 @@
                 <option value="matcha">Matcha</option>
                 <option value="sand">Sand</option>
             </optgroup>
-        </select>
+        </select> -->
     </div>
 
     {#if filteredStations.length > 0}
@@ -340,7 +381,7 @@
         <div
             bind:this={mapElement}
             class="map-container"
-            style="background-color: {theme.bg}"
+            style="background-color: var(--md-sys-color-background, #131316);"
         ></div>
 
         {#if showToast}
@@ -355,16 +396,6 @@
         gap: 10px;
         margin: 15px;
         z-index: 1001;
-    }
-    input,
-    select {
-        padding: 10px;
-        border-radius: 8px;
-        border: 1px solid #ddd;
-        font-size: 14px;
-    }
-    input {
-        flex-grow: 1;
     }
 
     .search-results {
@@ -393,7 +424,7 @@
         margin-top: 0;
     }
     .map-container {
-        height: 500px;
+        height: 400px;
         border-radius: 12px;
         overflow: hidden;
         transition: background-color 0.4s ease;
@@ -420,15 +451,15 @@
         justify-content: center;
     }
     :global(.stop-dot) {
-        width: 8px;
-        height: 8px;
+        width: 11px;
+        height: 11px;
         background: white;
         border: 2.5px solid;
         border-radius: 50%;
     }
     :global(.hub-pill) {
-        width: 15px;
-        height: 9.5px;
+        width: 20px;
+        height: 15px;
         background: white;
         border: 3px solid;
         border-radius: 12px;

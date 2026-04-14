@@ -1,8 +1,9 @@
 <script>
     import LeafletMap from "$lib/LeafletMap.svelte";
     import { onMount } from "svelte";
-    import Autocomplete from "@smui-extra/autocomplete";
+
     import SchematicRouteWeb from "$lib/SchematicRouteWeb.svelte";
+    import "@m3e/web/all";
     import Snackbar, { Actions } from "@smui/snackbar";
     import { Label } from "@smui/button";
     import html2canvas from "html2canvas";
@@ -18,11 +19,308 @@
         link.click();
         document.body.removeChild(link);
     }
-
+    let metroLines = {
+        "Red line": [
+            "Shaheed Sthal (New Bus Adda)",
+            "Hindon River",
+            "Arthala",
+            "Mohan Nagar",
+            "Shyam Park",
+            "Major Mohit Sharma Rajender Nagar",
+            "Raj Bagh",
+            "Shaheed Nagar",
+            "Dilshad Garden",
+            "Jhilmil",
+            "Mansrover Park",
+            "Shahdara",
+            "Welcome",
+            "Seelam Pur",
+            "Shastri Park",
+            "Kashmere Gate",
+            "Tis Hazari",
+            "Pul Bangash",
+            "Pratap Nagar",
+            "Shastri Nagar",
+            "Inderlok",
+            "Kanhaiya Nagar",
+            "Keshav Puram",
+            "Netaji Subash Place",
+            "Kohat Enclave",
+            "Pitampura",
+            "Rohini East",
+            "Rohini West",
+            "Rithala",
+        ],
+        "Yellow line": [
+            "Samaypur Badli",
+            "Rohini Sector 18-19",
+            "Haiderpur Badli Mor",
+            "Jahangirpuri",
+            "Adarsh Nagar",
+            "Azadpur",
+            "Model Town",
+            "Guru Tegh Bahadur Nagar",
+            "Vishwavidyalaya",
+            "Vidhan Sabha",
+            "Civil Lines",
+            "Chandni Chowk",
+            "Chawri Bazar",
+            "New Delhi",
+            "Rajiv Chowk",
+            "Patel Chowk",
+            "Central Secretariat",
+            "Udyog Bhawan",
+            "Lok Kalyan Marg",
+            "Jorbagh",
+            "Dilli Haat - INA",
+            "AIIMS",
+            "Green Park",
+            "Hauz Khas",
+            "Malviya Nagar",
+            "Saket",
+            "Qutab Minar",
+            "Chhattarpur",
+            "Sultanpur",
+            "Ghitorni",
+            "Arjan Garh",
+            "Gurudronacharya",
+            "Sikanderpur",
+            "MG Road",
+            "IFFCO Chowk",
+            "Huda City Centre",
+        ],
+        "Blue line main": [
+            "Dwarka Sector - 21",
+            "Dwarka Sector - 8",
+            "Dwarka Sector - 9",
+            "Dwarka Sector - 10",
+            "Dwarka Sector - 11",
+            "Dwarka Sector - 12",
+            "Dwarka Sector - 13",
+            "Dwarka Sector - 14",
+            "Dwarka",
+            "Dwarka Mor",
+            "Nawada",
+            "Uttam Nagar West",
+            "Uttam Nagar East",
+            "Janak Puri West",
+            "Janak Puri East",
+            "Tilak Nagar",
+            "Subash Nagar",
+            "Tagore Garden",
+            "Rajouri Garden",
+            "Ramesh Nagar",
+            "Moti Nagar",
+            "Kirti Nagar",
+            "Shadipur",
+            "Patel Nagar",
+            "Rajendra Place",
+            "Karol Bagh",
+            "Jhandewalan",
+            "RK Ashram Marg",
+            "Barakhamba",
+            "Mandi House",
+            "Supreme Court",
+            "Indraprastha",
+            "Yamuna Bank",
+            "Akshardham",
+            "Mayur Vihar-I",
+            "Mayur Vihar Ext",
+            "New Ashok Nagar",
+            "Noida Sec -15",
+            "Noida Sec -16",
+            "Noida Sec -18",
+            "Botanical Garden",
+            "Golf Course",
+            "Noida City Centre",
+            "Noida Sec-34",
+            "Noida Sec-52",
+            "Noida Sec-61",
+            "Noida Sec-59",
+            "Noida Sec-62",
+            "Noida Electronic City",
+        ],
+        "Blue line branch": [
+            "Laxmi Nagar",
+            "Nirman Vihar",
+            "Preet Vihar",
+            "Karkarduma",
+            "Anand Vihar",
+            "Kaushambi",
+            "Vaishali",
+        ],
+        "Green line": [
+            "Punjabi Bagh",
+            "Shivaji Park",
+            "Madipur",
+            "Paschim Vihar (East)",
+            "Paschim Vihar (West)",
+            "Peera Garhi",
+            "Udyog Nagar",
+            "Maharaja Surajmal Stadium",
+            "Nangloi",
+            "Nangloi Railway Station",
+            "Rajdhani Park",
+            "Mundka",
+            "Mundka Industrial Area (M.I.A)",
+            "Ghevra Metro station",
+            "Tikri Kalan",
+            "Tikri Border",
+            "Pandit Shree Ram Sharma",
+            "Bahadurgarh City",
+            "Brigadier Hoshiyar Singh",
+        ],
+        "Green line branch": ["Satguru Ram Singh Marg", "Ashok Park Main"],
+        "Violet line": [
+            "Lal Quila",
+            "Jama Masjid",
+            "Delhi Gate",
+            "ITO",
+            "Janpath",
+            "Khan Market",
+            "Jawahar Lal Nehru Stadium",
+            "Jangpura",
+            "Lajpat Nagar",
+            "Moolchand",
+            "Kailash Colony",
+            "Nehru Place",
+            "Kalkaji Mandir",
+            "Govind Puri",
+            "Harkesh Nagar Okhla",
+            "Jasola-Apollo",
+            "Sarita Vihar",
+            "Mohan Estate",
+            "Tughlakabad Station",
+            "Badarpur Border",
+            "Sarai",
+            "NHPC Chowk",
+            "Mewala Maharajpur",
+            "Sector-28",
+            "Badkal Mor",
+            "Old Faridabad",
+            "Neelam Chowk Ajronda",
+            "Bata Chowk",
+            "Escorts Mujesar",
+            "Sant Surdas (Sihi)",
+            "Raja Nahar Singh",
+        ],
+        "Pink line loop": [
+            "Yamuna Vihar",
+            "Bhajanpura",
+            "Khajuri Khas",
+            "Sonia Vihar",
+            "Soorghat",
+            "Jagatpur Village",
+            "Jharoda Majra",
+            "Burari Crossing",
+            "Majlis Park",
+            "Shalimar Bagh",
+            "Shakurpur",
+            "Punjabi Bagh West",
+            "ESI Basai Darapur",
+            "Mayapuri",
+            "Naraina Vihar",
+            "Delhi Cantt",
+            "Durgabai Deshmukh South Campus",
+            "Sir Vishweshwaraiah Moti Bagh",
+            "Bhikaji Cama Place",
+            "Sarojini Nagar",
+            "South Extension",
+            "Vinobapuri",
+            "Ashram",
+            "Sarai Kale Khan - Nizamuddin",
+            "Mayur Vihar Pocket 1",
+            "Trilokpuri Sanjay Lake",
+            "East Vinod Nagar - Mayur Vihar-II",
+            "Mandawali - West Vinod Nagar",
+            "IP Extension",
+            "Karkarduma Court",
+            "Krishna Nagar",
+            "East Azad Nagar",
+            "Jafrabad",
+            "Maujpur - Babarpur",
+        ],
+        "Pink line branch": ["Gokulpuri", "Johri Enclave", "Shiv Vihar"],
+        "Magenta line": [
+            "Janak Puri West",
+            "Dabri Mor - Janakpuri South",
+            "Dashrath Puri",
+            "Palam",
+            "Sadar Bazar Contonment",
+            "Terminal 1- IGI Airport",
+            "Shankar Vihar",
+            "Vasant Vihar",
+            "Munirka",
+            "RK Puram",
+            "IIT",
+            "Panchsheel Park",
+            "Chirag Delhi",
+            "Greater Kailash",
+            "Nehru Enclave",
+            "Okhla NSIC",
+            "Sukhdev Vihar",
+            "Jamia Millia Islamia",
+            "Okhla Vihar",
+            "Jasola Vihar Shaheen Bagh",
+            "Kalindi Kunj",
+            "Okhla Bird Sanctuary",
+        ],
+        "Orange line": [
+            "Shivaji Stadium",
+            "Dhaula Kuan",
+            "Delhi Aerocity",
+            "IGI Airport",
+        ],
+        "Gray line": ["Nangli", "Najafgarh", "Dhansa Bus Stand"],
+        "Aqua line": [
+            "Noida Sector 51",
+            "Noida Sector 50",
+            "Noida Sector 76",
+            "Noida Sector 101",
+            "Noida Sector 81",
+            "NSEZ",
+            "Noida Sector 83",
+            "Noida Sector 137",
+            "Noida Sector 142",
+            "Noida Sector 143",
+            "Noida Sector 144",
+            "Noida Sector 145",
+            "Noida Sector 146",
+            "Noida Sector 147",
+            "Noida Sector 148",
+            "Knowledge Park",
+            "Pari Chowk",
+            "Alpha 1",
+            "Delta 1",
+            "GNIDA Office",
+            "Depot Station",
+        ],
+        "Rapid Metro": [
+            "Sector 55-56 (Rapid Metro)",
+            "Sector 54 Chowk (Rapid Metro)",
+            "Sector 53-54 (Rapid Metro)",
+            "Sector 42-43 (Rapid Metro)",
+            "Phase-I (Rapid Metro)",
+            "Phase 2 (Rapid Metro)",
+            "Belvedere Towers (Rapid Metro)",
+            "Cyber City (Rapid Metro)",
+            "Moulsari Avenue (Rapid Metro)",
+            "Phase 3 (Rapid Metro)",
+        ],
+    };
     let stations = [
+        // Red line
+        "Shaheed Sthal (New Bus Adda)",
+        "Hindon River",
+        "Arthala",
+        "Mohan Nagar",
+        "Shyam Park",
+        "Major Mohit Sharma Rajender Nagar",
+        "Raj Bagh",
+        "Shaheed Nagar",
         "Dilshad Garden",
         "Jhilmil",
-        "Mansrover park",
+        "Mansrover Park",
         "Shahdara",
         "Welcome",
         "Seelam Pur",
@@ -41,20 +339,8 @@
         "Rohini East",
         "Rohini West",
         "Rithala",
-        "Mundka",
-        "Rajdhani Park",
-        "Nangloi Railway Station",
-        "Nangloi",
-        "Maharaja Surajmal Stadium",
-        "Udyog Nagar",
-        "Peera Garhi",
-        "Paschim Vihar (West)",
-        "Paschim Vihar (East)",
-        "Madipur",
-        "Shivaji Park",
-        "Punjabi Bagh",
-        "Ashok Park Main",
-        "Satguru Ram Singh Marg",
+
+        // Yellow line
         "Samaypur Badli",
         "Rohini Sector 18-19",
         "Haiderpur Badli Mor",
@@ -91,56 +377,96 @@
         "MG Road",
         "IFFCO Chowk",
         "Huda City Centre",
-        "Vaishali",
-        "Kaushambi",
-        "Anand Vihar",
-        "Karkarduma",
-        "Preet Vihar",
-        "Nirman Vihar",
-        "Laxmi Nagar",
-        "Noida City Centre",
-        "Golf Course",
-        "Botanical Garden",
-        "Noida Sec -18",
-        "Noida Sec -16",
-        "Noida Sec -15",
-        "New Ashok Nagar",
-        "Mayur Vihar Ext",
-        "Mayur Vihar-I",
-        "Akshardham",
-        "Yamuna Bank",
-        "Indraprastha",
-        "Supreme Court",
-        "Mandi House",
-        "Barakhamba",
-        "RK Ashram Marg",
-        "Jhandewalan",
-        "Karol Bagh",
-        "Rajendra Place",
-        "Patel Nagar",
-        "Shadipur",
-        "Kirti Nagar",
-        "Moti Nagar",
-        "Ramesh Nagar",
-        "Rajouri Garden",
-        "Tagore Garden",
-        "Subash Nagar",
-        "Tilak Nagar",
-        "Janak Puri East",
-        "Janak Puri West",
-        "Uttam Nagar East",
-        "Uttam Nagar West",
-        "Nawada",
-        "Dwarka Mor",
-        "Dwarka",
-        "Dwarka Sector - 14",
-        "Dwarka Sector - 13",
-        "Dwarka Sector - 12",
-        "Dwarka Sector - 11",
-        "Dwarka Sector - 10",
-        "Dwarka Sector - 9",
-        "Dwarka Sector - 8",
+
+        // Blue line main
         "Dwarka Sector - 21",
+        "Dwarka Sector - 8",
+        "Dwarka Sector - 9",
+        "Dwarka Sector - 10",
+        "Dwarka Sector - 11",
+        "Dwarka Sector - 12",
+        "Dwarka Sector - 13",
+        "Dwarka Sector - 14",
+        "Dwarka",
+        "Dwarka Mor",
+        "Nawada",
+        "Uttam Nagar West",
+        "Uttam Nagar East",
+        "Janak Puri West",
+        "Janak Puri East",
+        "Tilak Nagar",
+        "Subash Nagar",
+        "Tagore Garden",
+        "Rajouri Garden",
+        "Ramesh Nagar",
+        "Moti Nagar",
+        "Kirti Nagar",
+        "Shadipur",
+        "Patel Nagar",
+        "Rajendra Place",
+        "Karol Bagh",
+        "Jhandewalan",
+        "RK Ashram Marg",
+        "Barakhamba",
+        "Mandi House",
+        "Supreme Court",
+        "Indraprastha",
+        "Yamuna Bank",
+        "Akshardham",
+        "Mayur Vihar-I",
+        "Mayur Vihar Ext",
+        "New Ashok Nagar",
+        "Noida Sec -15",
+        "Noida Sec -16",
+        "Noida Sec -18",
+        "Botanical Garden",
+        "Golf Course",
+        "Noida City Centre",
+        "Noida Sec-34",
+        "Noida Sec-52",
+        "Noida Sec-61",
+        "Noida Sec-59",
+        "Noida Sec-62",
+        "Noida Electronic City",
+
+        // Blue line branch
+        "Laxmi Nagar",
+        "Nirman Vihar",
+        "Preet Vihar",
+        "Karkarduma",
+        "Anand Vihar",
+        "Kaushambi",
+        "Vaishali",
+
+        // Green line
+        "Punjabi Bagh",
+        "Shivaji Park",
+        "Madipur",
+        "Paschim Vihar (East)",
+        "Paschim Vihar (West)",
+        "Peera Garhi",
+        "Udyog Nagar",
+        "Maharaja Surajmal Stadium",
+        "Nangloi",
+        "Nangloi Railway Station",
+        "Rajdhani Park",
+        "Mundka",
+        "Mundka Industrial Area (M.I.A)",
+        "Ghevra Metro station",
+        "Tikri Kalan",
+        "Tikri Border",
+        "Pandit Shree Ram Sharma",
+        "Bahadurgarh City",
+        "Brigadier Hoshiyar Singh",
+
+        // Green line branch
+        "Satguru Ram Singh Marg",
+        "Ashok Park Main",
+
+        // Violet line
+        "Lal Quila",
+        "Jama Masjid",
+        "Delhi Gate",
         "ITO",
         "Janpath",
         "Khan Market",
@@ -167,20 +493,19 @@
         "Neelam Chowk Ajronda",
         "Bata Chowk",
         "Escorts Mujesar",
-        "IGI Airport",
-        "Delhi Aerocity",
-        "Dhaula Kuan",
-        "Shivaji Stadium",
-        "Delhi Gate",
-        "Jama Masjid",
-        "Lal Quila",
-        "Okhla Bird Sanctuary",
-        "Kalindi Kunj",
-        "Jasola Vihar Shaheen Bagh",
-        "Okhla Vihar",
-        "Jamia Millia Islamia",
-        "Sukhdev Vihar",
-        "Okhla NSIC",
+        "Sant Surdas (Sihi)",
+        "Raja Nahar Singh",
+
+        // Pink line loop
+
+        "Yamuna Vihar",
+        "Bhajanpura",
+        "Khajuri Khas",
+        "Sonia Vihar",
+        "Soorghat",
+        "Jagatpur Village",
+        "Jharoda Majra",
+        "Burari Crossing",
         "Majlis Park",
         "Shalimar Bagh",
         "Shakurpur",
@@ -188,33 +513,16 @@
         "ESI Basai Darapur",
         "Mayapuri",
         "Naraina Vihar",
-        "Delhi Cantt.",
+        "Delhi Cantt",
         "Durgabai Deshmukh South Campus",
-        "Nehru Enclave",
-        "Greater Kailash",
-        "Chirag Delhi",
-        "Panchsheel Park",
-        "IIT",
-        "RK Puram",
-        "Munirka",
-        "Vasant Vihar",
-        "Shankar Vihar",
-        "Terminal 1- IGI Airport",
-        "Sadar Bazar Contonment",
-        "Palam",
-        "Dashrath Puri",
-        "Dabri Mor - Janakpuri South",
-        "Mundka Industrial Area (M.I.A)",
-        "Ghevra Metro station",
-        "Tikri Kalan",
-        "Tikri Border",
-        "Pandit Shree Ram Sharma",
-        "Bahadurgarh City",
-        "Brigadier Hoshiyar Singh",
         "Sir Vishweshwaraiah Moti Bagh",
         "Bhikaji Cama Place",
         "Sarojini Nagar",
         "South Extension",
+        "Vinobapuri",
+        "Ashram",
+        "Sarai Kale Khan - Nizamuddin",
+        "Mayur Vihar Pocket 1",
         "Trilokpuri Sanjay Lake",
         "East Vinod Nagar - Mayur Vihar-II",
         "Mandawali - West Vinod Nagar",
@@ -224,32 +532,48 @@
         "East Azad Nagar",
         "Jafrabad",
         "Maujpur - Babarpur",
+
+        // Pink line branch
         "Gokulpuri",
         "Johri Enclave",
         "Shiv Vihar",
-        "Sant Surdas (Sihi)",
-        "Raja Nahar Singh",
-        "Vinobapuri",
-        "Ashram",
-        "Sarai Kale Khan - Nizamuddin",
-        "Mayur Vihar Pocket 1",
-        "Shaheed Sthal (New Bus Adda)",
-        "Hindon River",
-        "Arthala",
-        "Mohan Nagar",
-        "Shyam Park",
-        "Major Mohit Sharma Rajender Nagar",
-        "Raj Bagh",
-        "Shaheed Nagar",
-        "Noida Sec-34",
-        "Noida Sec-52",
-        "Noida Sec-61",
-        "Noida Sec-59",
-        "Noida Sec-62",
-        "Noida Electronic City",
+
+        // Magenta line
+        "Janak Puri West",
+        "Dabri Mor - Janakpuri South",
+        "Dashrath Puri",
+        "Palam",
+        "Sadar Bazar Contonment",
+        "Terminal 1- IGI Airport",
+        "Shankar Vihar",
+        "Vasant Vihar",
+        "Munirka",
+        "RK Puram",
+        "IIT",
+        "Panchsheel Park",
+        "Chirag Delhi",
+        "Greater Kailash",
+        "Nehru Enclave",
+        "Okhla NSIC",
+        "Sukhdev Vihar",
+        "Jamia Millia Islamia",
+        "Okhla Vihar",
+        "Jasola Vihar Shaheen Bagh",
+        "Kalindi Kunj",
+        "Okhla Bird Sanctuary",
+
+        // Orange line
+        "Shivaji Stadium",
+        "Dhaula Kuan",
+        "Delhi Aerocity",
+        "IGI Airport",
+
+        // Gray line
         "Nangli",
         "Najafgarh",
         "Dhansa Bus Stand",
+
+        // Aqua line
         "Noida Sector 51",
         "Noida Sector 50",
         "Noida Sector 76",
@@ -271,7 +595,22 @@
         "Delta 1",
         "GNIDA Office",
         "Depot Station",
+
+        // Rapid Metro
+        "Sector 55-56 (Rapid Metro)",
+        "Sector 54 Chowk (Rapid Metro)",
+        "Sector 53-54 (Rapid Metro)",
+        "Sector 42-43 (Rapid Metro)",
+        "Phase-I (Rapid Metro)",
+        "Phase 2 (Rapid Metro)",
+        "Belvedere Towers (Rapid Metro)",
+        "Cyber City (Rapid Metro)",
+        "Moulsari Avenue (Rapid Metro)",
+        "Phase 3 (Rapid Metro)",
     ];
+
+    // Deduplicate (interchange stations appear in multiple lines above)
+    stations = [...new Set(stations)];
 
     $: routeStations = route.map((r) => r.station);
     $: transferCount = route.filter((r) => r.isTransfer).length;
@@ -404,24 +743,38 @@
     });
 
     let distancebwstations = async () => {
+        // 1. ADD THIS GUARD CLAUSE
+        // Prevent the API call if either the 'from' or 'to' fields are empty
+        if (!from || !to) {
+            console.warn("Please select both a 'from' and 'to' station.");
+            routenofoundcss = "display:block"; // Show your 'not found/error' UI
+            routecss = "display:none";
+            routeFound = false;
+            return; // Exit the function early
+        }
+
         let foundFrom = false,
             foundTo = false;
+
         try {
             const res = await fetch(
                 `/api/metroroute?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
             );
             const result = await res.json();
+
             if (!res.ok || !result.route || result.route.length === 0) {
                 routenofoundcss = "display:block";
                 routecss = "display:none";
                 routeFound = false;
                 return;
             }
+
             routenofoundcss = "display:none";
             routecss = "display:block";
             routeFound = true;
             rawroute = result;
             route = result.route;
+
             for (let station in data) {
                 if (data[station].stop_name === from) {
                     fromd = data[station].distance;
@@ -441,6 +794,7 @@
                     break;
                 }
             }
+
             for (let p in data) {
                 if (data[p].stop_name === to) {
                     tod = data[p].distance;
@@ -459,6 +813,7 @@
                     break;
                 }
             }
+
             if (!foundFrom || !foundTo) return;
             distance = Math.abs(tod - fromd).toFixed(2) + " km";
         } catch (err) {
@@ -477,24 +832,24 @@
 <div class="app-shell">
     <!-- ── TOP NAV ── -->
     <header class="top-bar">
+        <m3e-segmented-button style="width:100%" hide-selection-indicator>
+            <m3e-button-segment
+                style="text-align: center;"
+                checked
+                on:click={() => (activeTab = "planner")}
+                >Planner</m3e-button-segment
+            >
+            <m3e-button-segment
+                style="text-align: center;"
+                on:click={() => (activeTab = "lines")}>Lines</m3e-button-segment
+            >
+            <m3e-button-segment
+                style="text-align: center;"
+                on:click={() => (activeTab = "map")}>Map</m3e-button-segment
+            >
+            <!-- Additional segments omitted for brevity -->
+        </m3e-segmented-button>
         <div class="logo-mark"></div>
-        <nav class="tab-nav">
-            <button
-                class="tab-btn"
-                class:active={activeTab === "planner"}
-                on:click={() => (activeTab = "planner")}>Planner</button
-            >
-            <button
-                class="tab-btn"
-                class:active={activeTab === "lines"}
-                on:click={() => (activeTab = "lines")}>Lines</button
-            >
-            <button
-                class="tab-btn"
-                class:active={activeTab === "map"}
-                on:click={() => (activeTab = "map")}>Map</button
-            >
-        </nav>
     </header>
 
     <!-- ── MAP TAB ── -->
@@ -507,108 +862,135 @@
     <!-- ── LINES TAB ── -->
     {#if activeTab === "lines"}
         <div class="tab-content">
-            <div class="section-eyebrow">METRO LINES</div>
-            <div class="lines-list">
-                {#each lines as ld}
-                    <div class="line-card">
-                        <div
-                            class="line-stripe"
-                            style="background:{ld.stroke}"
-                        ></div>
-                        <div class="line-info">
-                            <div class="line-name-row">
-                                <span class="line-name">{ld.name}</span>
-                                <span class="station-badge"
-                                    >{ld.stations} STATIONS</span
-                                >
-                            </div>
-                            <span class="line-region"
-                                >{ld.region.toUpperCase()}</span
-                            >
-                        </div>
-                        <svg
-                            class="line-chevron"
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2.5"><path d="M9 18l6-6-6-6" /></svg
-                        >
-                    </div>
+            <m3e-action-list style="text-align: left;" variant="segmented">
+                {#each Object.entries(metroLines) as [lineName, stations]}
+                    <m3e-expandable-list-item>
+                        {lineName}
 
-                    <div class="stations-peek">
-                        {#each data as d}
-                            {#if d.Line === ld.name}
-                                <div class="peek-row">
-                                    <span
-                                        class="peek-dot"
-                                        style="background:{ld.stroke}"
-                                    ></span>
-                                    <span class="peek-name">{d.stop_name}</span>
-                                </div>
-                            {/if}
-                        {/each}
-                    </div>
+                        <div slot="items">
+                            {#each stations as station}
+                                <m3e-list-action
+                                    on:click={() =>
+                                        open(`/station?id=${station}`)}
+                                >
+                                    <m3e-icon-button
+                                        variant="tonal"
+                                        slot="leading"
+                                        opticalSize="48"
+                                        name="directions_subway"
+                                    >
+                                        <m3e-icon
+                                            opticalSize="48"
+                                            name="directions_subway"
+                                        ></m3e-icon>
+                                    </m3e-icon-button>
+
+                                    {station}
+                                </m3e-list-action>
+                            {/each}
+                        </div>
+                    </m3e-expandable-list-item>
                 {/each}
-            </div>
+            </m3e-action-list>
         </div>
     {/if}
 
     <!-- ── PLANNER TAB ── -->
     {#if activeTab === "planner"}
         <div class="tab-content">
+            <!-- <m3e-card
+                variant="filled"
+                style="margin-top:10px; margin-bottom: 10px;"
+            >
+                <img
+                    slot="header"
+                    style="object-fit: cover; width: 500px; overflow: hidden; max-width: 450px;"
+                    width="450px"
+                    src="/noice2.png"
+                />
+            </m3e-card> -->
+
             <!-- Search card -->
-            <div class="search-card">
-                <div class="search-well">
-                    <div class="journey-track">
-                        <div class="track-circle"></div>
-                        <div class="track-dash"></div>
-                        <div class="track-square"></div>
-                    </div>
-                    <div class="search-inputs">
-                        <div class="search-field">
-                            <Autocomplete options={stations} bind:text={from}>
-                                <input
-                                    class="search-input"
-                                    placeholder="Leaving from…"
-                                    bind:value={from}
-                                />
-                            </Autocomplete>
-                        </div>
-                        <div class="field-divider"></div>
-                        <div class="search-field">
-                            <Autocomplete options={stations} bind:text={to}>
-                                <input
-                                    class="search-input"
-                                    placeholder="Heading to…"
-                                    bind:value={to}
-                                />
-                            </Autocomplete>
-                        </div>
-                    </div>
-                    <button
+            <m3e-card variant="filled">
+                <div slot="content" class="search-inputs">
+                    <m3e-form-field style="width: 100%;">
+                        <label slot="label" for="fromfield">Leaving from</label>
+                        <input
+                            on:input={(e) => (from = e.target.value)}
+                            id="fromfield"
+                        />
+                    </m3e-form-field>
+                    <m3e-autocomplete for="fromfield">
+                        {#each stations as station}
+                            <m3e-option
+                                value={station}
+                                on:click={() => (from = station)}
+                            >
+                                {station}
+                            </m3e-option>
+                        {/each}
+                    </m3e-autocomplete>
+
+                    <m3e-form-field style="width: 100%;">
+                        <label slot="label" for="tofield">Heading to</label>
+                        <input
+                            on:input={(e) => (to = e.target.value)}
+                            id="tofield"
+                        />
+                    </m3e-form-field>
+                    <m3e-autocomplete for="tofield">
+                        {#each stations as station}
+                            <m3e-option
+                                value={station}
+                                on:click={() => (to = station)}
+                            >
+                                {station}
+                            </m3e-option>
+                        {/each}
+                    </m3e-autocomplete>
+
+                    <m3e-icon-button
                         class="swap-btn"
                         on:click={swapStations}
                         aria-label="Swap stations"
+                        variant="elevated"
                     >
-                        <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2.5"
-                        >
-                            <path
-                                d="M7 16V4M7 4L3 8M7 4L11 8M17 8v12m0 0l4-4m-4 4l-4-4"
-                            />
-                        </svg>
-                    </button>
+                        <m3e-icon name="swap_vertical" />
+                    </m3e-icon-button>
                 </div>
-                <button class="search-btn" on:click={distancebwstations}
-                    >Search Route</button
+                <div slot="actions" end>
+                    <m3e-button
+                        style="width: 100%;"
+                        on:click={() => distancebwstations()}
+                        variant="filled">Search Route</m3e-button
+                    >
+                </div>
+            </m3e-card>
+            <br />
+            <div class="quick-chips-row">
+                <m3e-assist-chip
+                    on:click={() => (to = "Shaheed Sthal (New Bus Adda)")}
                 >
+                    <m3e-icon slot="icon" name="home"></m3e-icon>
+                    Home
+                </m3e-assist-chip>
+
+                <m3e-assist-chip on:click={() => (to = "Vishwavidyalaya")}>
+                    <m3e-icon slot="icon" name="school"></m3e-icon>
+                    School
+                </m3e-assist-chip>
+
+                <m3e-assist-chip on:click={() => (to = "Rajiv Chowk")}>
+                    <m3e-icon slot="icon" name="history"></m3e-icon>
+                    Rajiv Chowk
+                </m3e-assist-chip>
+                <m3e-assist-chip
+                    variant="elevated"
+                    on:click={() => (to = "Shaheed Sthal (New Bus Adda)")}
+                >
+                    <m3e-icon slot="icon" name="edit"></m3e-icon>
+                    Edit
+                </m3e-assist-chip>
             </div>
 
             <!-- Nearest station -->
@@ -616,54 +998,40 @@
                 <div class="section-eyebrow" style="margin-top:28px;">
                     NEAREST STATION
                 </div>
-                <div class="nearest-card">
+                <!-- <div class="nearest-card">
+
+                    </div>
+                </div> -->
+                <m3e-card variant="outlined">
                     <div class="nearest-body">
                         <div>
-                            <div class="nearest-name">
+                            <m3e-typography variant="subtitle1">
                                 {nearestStation.stop_name}
-                            </div>
+                            </m3e-typography>
                             <div class="nearest-dist">
                                 ~ {(minDistance * 1000).toFixed(0)}m away
                             </div>
                         </div>
                         <div class="nearest-actions">
-                            <button
-                                class="action-pill"
+                            <m3e-button
+                                variant="tonal"
                                 on:click={googlemapslink}
                             >
-                                <svg
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2.5"
-                                    ><path
-                                        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
-                                    /></svg
-                                >
+                                <m3e-icon name="map_marker"></m3e-icon>
                                 Directions
-                            </button>
-                            <button
-                                class="action-pill uber"
+                            </m3e-button>
+                            <m3e-button
+                                variant="outlined"
                                 on:click={openuberlink}
                             >
-                                <svg
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill="currentColor"
-                                    ><path
-                                        d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"
-                                    /></svg
-                                >
+                                <m3e-icon name="local_taxi"></m3e-icon>
                                 Uber
-                            </button>
+                            </m3e-button>
                         </div>
                     </div>
                     <div class="nearest-meta">
                         <div class="meta-chip">
-                            <span class="chip-label">LINE</span>
+                            <div slot="content">LINE</div>
                             <span class="chip-val">{nearestStation.Line}</span>
                         </div>
                         <div class="meta-chip">
@@ -672,8 +1040,8 @@
                                 >{nearestStation.stop_layout}</span
                             >
                         </div>
-                    </div>
-                </div>
+                    </div></m3e-card
+                >
             {:else}
                 <!-- <div class="no-location">
                     <img width="120" height="120" src="/noloc.svg" alt="" />
@@ -684,12 +1052,16 @@
             <!-- Route result -->
             {#if routeFound && frome && toe !== "undefined"}
                 <!-- Schematic -->
-                <div class="schematic-wrap">
+                <br />
+                <m3e-card
+                    style="max-width: 100%; height: 200px;"
+                    variant="outlined"
+                >
                     <SchematicRouteWeb route={rawroute} />
-                </div>
+                </m3e-card>
 
                 <!-- Summary stats card -->
-                <div class="stats-card" id="capture">
+                <m3e-card variant="outlined" class="stats-card" id="capture">
                     <div class="stats-endpoints">
                         <div class="endpoint from-ep">
                             <div
@@ -778,13 +1150,13 @@
                             <span class="stat-label">Distance</span>
                         </div>
                     </div>
-                </div>
+                </m3e-card>
 
                 <!-- Stations list -->
                 <div class="section-eyebrow" style="margin-top:28px;">
                     STATIONS LIST
                 </div>
-                <div class="stations-list">
+                <m3e-card variant="outlined" class="stations-list">
                     {#each route as st, idx}
                         <div
                             class="station-row"
@@ -817,7 +1189,7 @@
                             </div>
                         </div>
                     {/each}
-                </div>
+                </m3e-card>
 
                 <button class="screenshot-btn" on:click={saveScreenshot}>
                     <svg
@@ -878,17 +1250,23 @@
     /* ── RESET & TOKENS ── */
     :global(body) {
         margin: 0;
-        background: #131316;
-        color: #e8e8ea;
+        color: var(--md-sys-color-on-background, #e8e8ea);
         font-family:
             "DM Sans", "Manrope", "SF Pro Display", system-ui, sans-serif;
         -webkit-font-smoothing: antialiased;
+        scrollbar-width: none;
     }
 
     .app-shell {
+        scrollbar-width: none;
         min-height: 100vh;
-        background: #131316;
-        background-image: radial-gradient(circle, #2a2a2e 1px, transparent 1px);
+        background: var(--md-sys-color-background, #131316);
+        /* Use surface-variant for the subtle dot pattern */
+        background-image: radial-gradient(
+            circle,
+            var(--md-sys-color-surface-variant, #2a2a2e) 1px,
+            transparent 1px
+        );
         background-size: 22px 22px;
         margin: 0 auto;
         position: relative;
@@ -901,9 +1279,14 @@
         align-items: center;
         justify-content: space-between;
         padding: 16px 20px 12px;
-        position: sticky;
+
         top: 0;
-        background: rgba(19, 19, 22, 0.88);
+        /* Using color-mix to get that 88% opacity blur effect on the M3 surface color */
+        background: color-mix(
+            in srgb,
+            var(--md-sys-color-surface, #131316) 88%,
+            transparent
+        );
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         z-index: 100;
@@ -918,22 +1301,28 @@
         width: 32px;
         height: 32px;
         border-radius: 9px;
-        background: rgba(192, 40, 44, 0.15);
+        background: var(
+            --md-sys-color-error-container,
+            rgba(192, 40, 44, 0.15)
+        );
         display: flex;
         align-items: center;
         justify-content: center;
-        border: 1px solid rgba(192, 40, 44, 0.3);
+        border: 1px solid var(--md-sys-color-error, rgba(192, 40, 44, 0.3));
     }
     .logo-text {
         font-size: 1.25rem;
         font-weight: 800;
         letter-spacing: -0.03em;
-        color: #fff;
+        color: var(--md-sys-color-on-surface, #fff);
     }
 
     .tab-nav {
         display: flex;
-        background: rgba(255, 255, 255, 0.06);
+        background: var(
+            --md-sys-color-surface-container-highest,
+            rgba(255, 255, 255, 0.06)
+        );
         border-radius: 10px;
         padding: 3px;
         gap: 2px;
@@ -941,7 +1330,7 @@
     .tab-btn {
         background: transparent;
         border: none;
-        color: #666;
+        color: var(--md-sys-color-on-surface-variant, #666);
         font-size: 0.78rem;
         font-weight: 600;
         padding: 6px 12px;
@@ -951,8 +1340,8 @@
         font-family: inherit;
     }
     .tab-btn.active {
-        background: #c0282c;
-        color: #fff;
+        background: var(--md-sys-color-primary, #c0282c);
+        color: var(--md-sys-color-on-primary, #fff);
     }
 
     /* ── TAB CONTENT ── */
@@ -964,7 +1353,7 @@
         font-size: 0.68rem;
         font-weight: 800;
         letter-spacing: 1.2px;
-        color: #555;
+        color: var(--md-sys-color-on-surface-variant, #555);
         padding: 0 4px 10px;
     }
 
@@ -975,21 +1364,26 @@
 
     /* ── SEARCH CARD ── */
     .search-card {
-        background: #1e1e22;
+        background: var(--md-sys-color-surface-container, #1e1e22);
         border-radius: 22px;
         padding: 14px;
-        border: 1px solid rgba(255, 255, 255, 0.07);
+        border: 1px solid
+            var(--md-sys-color-outline-variant, rgba(255, 255, 255, 0.07));
     }
 
     .search-well {
-        background: rgba(255, 255, 255, 0.04);
+        background: var(
+            --md-sys-color-surface-container-low,
+            rgba(255, 255, 255, 0.04)
+        );
         border-radius: 16px;
         display: flex;
         align-items: stretch;
         padding: 12px 14px;
         margin-bottom: 12px;
         position: relative;
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        border: 1px solid
+            var(--md-sys-color-outline-variant, rgba(255, 255, 255, 0.06));
     }
 
     .journey-track {
@@ -1003,22 +1397,23 @@
     .track-circle {
         width: 10px;
         height: 10px;
-        border: 2.5px solid #c0282c;
+        border: 2.5px solid var(--md-sys-color-primary, #c0282c);
         border-radius: 50%;
-        background: #131316;
+        background: var(--md-sys-color-background, #131316);
         flex-shrink: 0;
         margin-top: 14px;
     }
     .track-dash {
         flex: 1;
         width: 2px;
-        border-left: 2px dashed rgba(255, 255, 255, 0.12);
+        border-left: 2px dashed
+            var(--md-sys-color-outline-variant, rgba(255, 255, 255, 0.12));
         min-height: 20px;
     }
     .track-square {
         width: 8px;
         height: 8px;
-        background: #c0282c;
+        background: var(--md-sys-color-primary, #c0282c);
         border-radius: 2px;
         flex-shrink: 0;
         margin-bottom: 14px;
@@ -1042,45 +1437,45 @@
         outline: none;
         font-size: 0.95rem;
         font-weight: 500;
-        color: #e8e8ea;
+        color: var(--md-sys-color-on-surface, #e8e8ea);
         font-family: inherit;
     }
     .search-input::placeholder {
-        color: #444;
+        color: var(--md-sys-color-on-surface-variant, #444);
     }
 
     .field-divider {
         height: 1px;
-        background: rgba(255, 255, 255, 0.07);
+        background: var(
+            --md-sys-color-outline-variant,
+            rgba(255, 255, 255, 0.07)
+        );
         width: 100%;
     }
 
     .swap-btn {
         position: absolute;
-        right: 14px;
-        top: 50%;
+        right: 46%;
+        top: 35%;
         transform: translateY(-50%);
-        background: #2a2a2e;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        width: 34px;
-        height: 34px;
+        background: var(--md-sys-color-surface-container-high, #2a2a2e);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: #888;
+        color: var(--md-sys-color-on-surface-variant, #888);
         cursor: pointer;
         transition: background 0.15s;
     }
     .swap-btn:hover {
-        background: #333;
-        color: #fff;
+        background: var(--md-sys-color-surface-container-highest, #333);
+        color: var(--md-sys-color-on-surface, #fff);
     }
 
     .search-btn {
         width: 100%;
-        background: #c0282c;
-        color: #fff;
+        background: var(--md-sys-color-primary, #c0282c);
+        color: var(--md-sys-color-on-primary, #fff);
         border: none;
         padding: 14px;
         border-radius: 14px;
@@ -1100,9 +1495,10 @@
 
     /* ── NEAREST STATION ── */
     .nearest-card {
-        background: #1e1e22;
+        background: var(--md-sys-color-surface-container, #1e1e22);
         border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.07);
+        border: 1px solid
+            var(--md-sys-color-outline-variant, rgba(255, 255, 255, 0.07));
         overflow: hidden;
     }
     .nearest-body {
@@ -1114,12 +1510,12 @@
     .nearest-name {
         font-size: 1.2rem;
         font-weight: 800;
-        color: #fff;
+        color: var(--md-sys-color-on-surface, #fff);
         letter-spacing: -0.02em;
     }
     .nearest-dist {
         font-size: 0.8rem;
-        color: #555;
+        color: var(--md-sys-color-on-surface-variant, #555);
         margin-top: 3px;
         font-weight: 500;
     }
@@ -1140,25 +1536,29 @@
         font-weight: 700;
         cursor: pointer;
         font-family: inherit;
-        background: rgba(21, 116, 234, 0.18);
-        color: #4a9eff;
+        background: var(
+            --md-sys-color-secondary-container,
+            rgba(21, 116, 234, 0.18)
+        );
+        color: var(--md-sys-color-on-secondary-container, #4a9eff);
         transition: background 0.15s;
     }
     .action-pill:hover {
-        background: rgba(21, 116, 234, 0.28);
+        filter: brightness(1.1);
     }
     .action-pill.uber {
-        background: rgba(255, 255, 255, 0.06);
-        color: #aaa;
-    }
-    .action-pill.uber:hover {
-        background: rgba(255, 255, 255, 0.1);
+        background: var(
+            --md-sys-color-surface-container-high,
+            rgba(255, 255, 255, 0.06)
+        );
+        color: var(--md-sys-color-on-surface-variant, #aaa);
     }
 
     .nearest-meta {
         display: flex;
         gap: 0;
-        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        border-top: 1px solid
+            var(--md-sys-color-outline-variant, rgba(255, 255, 255, 0.06));
         padding: 0 16px;
     }
     .meta-chip {
@@ -1169,18 +1569,19 @@
         gap: 2px;
     }
     .meta-chip + .meta-chip {
-        border-left: 1px solid rgba(255, 255, 255, 0.06);
+        border-left: 1px solid
+            var(--md-sys-color-outline-variant, rgba(255, 255, 255, 0.06));
         padding-left: 16px;
     }
     .chip-label {
         font-size: 0.6rem;
-        color: #444;
+        color: var(--md-sys-color-on-surface-variant, #444);
         font-weight: 700;
         letter-spacing: 0.8px;
     }
     .chip-val {
         font-size: 0.82rem;
-        color: #ccc;
+        color: var(--md-sys-color-on-surface, #ccc);
         font-weight: 600;
     }
 
@@ -1193,7 +1594,7 @@
         gap: 12px;
     }
     .no-location p {
-        color: #444;
+        color: var(--md-sys-color-on-surface-variant, #444);
         font-size: 0.9rem;
         font-weight: 500;
     }
@@ -1203,16 +1604,18 @@
         margin-top: 24px;
         border-radius: 20px;
         overflow: hidden;
-        background: #1e1e22;
-        border: 1px solid rgba(255, 255, 255, 0.07);
+        background: var(--md-sys-color-surface-container, #1e1e22);
+        border: 1px solid
+            var(--md-sys-color-outline-variant, rgba(255, 255, 255, 0.07));
         height: 200px;
     }
 
     /* ── STATS CARD ── */
     .stats-card {
-        background: #1e1e22;
+        background: var(--md-sys-color-surface-container, #1e1e22);
         border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.07);
+        border: 1px solid
+            var(--md-sys-color-outline-variant, rgba(255, 255, 255, 0.07));
         overflow: hidden;
         margin-top: 12px;
     }
@@ -1221,7 +1624,8 @@
         align-items: center;
         padding: 16px;
         gap: 10px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        border-bottom: 1px solid
+            var(--md-sys-color-outline-variant, rgba(255, 255, 255, 0.06));
     }
     .endpoint {
         display: flex;
@@ -1242,16 +1646,16 @@
     .ep-name {
         font-size: 0.9rem;
         font-weight: 700;
-        color: #e8e8ea;
+        color: var(--md-sys-color-on-surface, #e8e8ea);
     }
     .ep-line {
         font-size: 0.7rem;
-        color: #555;
+        color: var(--md-sys-color-on-surface-variant, #555);
         font-weight: 500;
         margin-top: 1px;
     }
     .endpoint-arrow {
-        color: #333;
+        color: var(--md-sys-color-on-surface-variant, #333);
         flex-shrink: 0;
     }
 
@@ -1266,31 +1670,35 @@
         flex-direction: column;
         align-items: center;
         gap: 4px;
-        color: #555;
+        color: var(--md-sys-color-on-surface-variant, #555);
     }
     .stat-val {
         font-size: 1.3rem;
         font-weight: 800;
-        color: #fff;
+        color: var(--md-sys-color-on-surface, #fff);
         line-height: 1;
     }
     .stat-label {
         font-size: 0.68rem;
-        color: #444;
+        color: var(--md-sys-color-on-surface-variant, #444);
         font-weight: 600;
         letter-spacing: 0.5px;
     }
     .stat-divider {
         width: 1px;
-        background: rgba(255, 255, 255, 0.06);
+        background: var(
+            --md-sys-color-outline-variant,
+            rgba(255, 255, 255, 0.06)
+        );
         margin: 4px 0;
     }
 
     /* ── STATIONS LIST ── */
     .stations-list {
-        background: #1e1e22;
+        background: var(--md-sys-color-surface-container, #1e1e22);
         border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.07);
+        border: 1px solid
+            var(--md-sys-color-outline-variant, rgba(255, 255, 255, 0.07));
         overflow: hidden;
         padding: 8px 16px;
     }
@@ -1313,30 +1721,36 @@
         width: 10px;
         height: 10px;
         border-radius: 50%;
-        border: 2.5px solid #c0282c;
-        background: #131316;
+        border: 2.5px solid var(--md-sys-color-primary, #c0282c);
+        background: var(--md-sys-color-background, #131316);
         flex-shrink: 0;
         margin-top: 14px;
         z-index: 1;
     }
     .tl-first,
     .tl-last {
-        background: #c0282c;
+        background: var(--md-sys-color-primary, #c0282c);
     }
     .tl-transfer {
-        border-color: #4a9eff;
-        background: #4a9eff;
+        border-color: var(--md-sys-color-tertiary, #4a9eff);
+        background: var(--md-sys-color-tertiary, #4a9eff);
     }
 
     .tl-line {
         width: 2px;
         flex: 1;
         min-height: 16px;
-        background: rgba(255, 255, 255, 0.1);
+        background: var(
+            --md-sys-color-outline-variant,
+            rgba(255, 255, 255, 0.1)
+        );
         margin-top: 3px;
     }
     .tl-line-blue {
-        background: rgba(74, 158, 255, 0.3);
+        background: var(
+            --md-sys-color-tertiary-container,
+            rgba(74, 158, 255, 0.3)
+        );
     }
 
     .station-info {
@@ -1346,15 +1760,18 @@
     .station-row-name {
         font-size: 0.92rem;
         font-weight: 600;
-        color: #d0d0d4;
+        color: var(--md-sys-color-on-surface, #d0d0d4);
     }
     .transfer-tag {
         display: inline-block;
         margin-top: 4px;
         padding: 3px 10px;
         border-radius: 999px;
-        background: rgba(74, 158, 255, 0.12);
-        color: #4a9eff;
+        background: var(
+            --md-sys-color-tertiary-container,
+            rgba(74, 158, 255, 0.12)
+        );
+        color: var(--md-sys-color-on-tertiary-container, #4a9eff);
         font-size: 0.72rem;
         font-weight: 700;
     }
@@ -1366,8 +1783,9 @@
         gap: 8px;
         margin: 16px auto 0;
         background: transparent;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        color: #666;
+        border: 1px solid
+            var(--md-sys-color-outline-variant, rgba(255, 255, 255, 0.12));
+        color: var(--md-sys-color-on-surface-variant, #666);
         padding: 12px 24px;
         border-radius: 12px;
         font-size: 0.85rem;
@@ -1379,8 +1797,8 @@
         justify-content: center;
     }
     .screenshot-btn:hover {
-        border-color: rgba(255, 255, 255, 0.22);
-        color: #aaa;
+        border-color: var(--md-sys-color-outline, rgba(255, 255, 255, 0.22));
+        color: var(--md-sys-color-on-surface, #aaa);
     }
 
     /* ── NO ROUTE ── */
@@ -1390,7 +1808,7 @@
         align-items: center;
         padding: 40px 16px;
         gap: 12px;
-        color: #444;
+        color: var(--md-sys-color-on-surface-variant, #444);
         text-align: center;
         font-size: 0.9rem;
         font-weight: 500;
@@ -1406,16 +1824,17 @@
     .line-card {
         display: flex;
         align-items: center;
-        background: #1e1e22;
+        background: var(--md-sys-color-surface-container, #1e1e22);
         border-radius: 18px;
-        border: 1px solid rgba(255, 255, 255, 0.07);
+        border: 1px solid
+            var(--md-sys-color-outline-variant, rgba(255, 255, 255, 0.07));
         padding: 14px 16px;
         gap: 14px;
         cursor: pointer;
         transition: background 0.15s;
     }
     .line-card:active {
-        background: #222227;
+        background: var(--md-sys-color-surface-container-highest, #222227);
     }
 
     .line-stripe {
@@ -1438,26 +1857,29 @@
     .line-name {
         font-size: 1.05rem;
         font-weight: 800;
-        color: #e8e8ea;
+        color: var(--md-sys-color-on-surface, #e8e8ea);
         letter-spacing: -0.02em;
     }
     .station-badge {
         font-size: 0.62rem;
         font-weight: 800;
-        color: #444;
-        background: rgba(255, 255, 255, 0.05);
+        color: var(--md-sys-color-on-surface-variant, #444);
+        background: var(
+            --md-sys-color-surface-container-highest,
+            rgba(255, 255, 255, 0.05)
+        );
         padding: 3px 8px;
         border-radius: 6px;
         letter-spacing: 0.5px;
     }
     .line-region {
         font-size: 0.72rem;
-        color: #444;
+        color: var(--md-sys-color-on-surface-variant, #444);
         font-weight: 600;
         letter-spacing: 0.5px;
     }
     .line-chevron {
-        color: #333;
+        color: var(--md-sys-color-on-surface-variant, #333);
     }
 
     .stations-peek {
@@ -1479,7 +1901,7 @@
     }
     .peek-name {
         font-size: 0.82rem;
-        color: #444;
+        color: var(--md-sys-color-on-surface-variant, #444);
         font-weight: 500;
     }
 
@@ -1488,19 +1910,20 @@
         text-align: center;
         padding: 32px 20px 20px;
         font-size: 0.72rem;
-        color: #333;
+        color: var(--md-sys-color-on-surface-variant, #333);
         line-height: 1.6;
     }
     .app-footer a {
-        color: #444;
+        color: var(--md-sys-color-on-surface-variant, #444);
         text-decoration: none;
     }
     .app-footer a:hover {
-        color: #666;
+        color: var(--md-sys-color-on-surface, #666);
     }
     .disclaimer {
         font-size: 0.68rem;
-        color: #2a2a2a;
+        color: var(--md-sys-color-on-background, #2a2a2a);
         margin-top: 4px;
+        opacity: 0.7;
     }
 </style>

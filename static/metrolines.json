@@ -195,7 +195,17 @@
     "Sant Surdas (Sihi)",
     "Raja Nahar Singh"
   ],
-  "Pink line": [
+
+  "Pink line loop": [
+    "Maujpur - Babarpur",
+    "Yamuna Vihar",
+    "Bhajanpura",
+    "Khajuri Khas",
+    "Sonia Vihar",
+    "Soorghat",
+    "Jagatpur Village",
+    "Jharoda Majra",
+    "Burari Crossing",
     "Majlis Park",
     "Azadpur",
     "Shalimar Bagh",
@@ -230,11 +240,15 @@
     "East Azad Nagar",
     "Welcome",
     "Jafrabad",
+    "Maujpur - Babarpur"
+  ],
+  "Pink line branch": [
     "Maujpur - Babarpur",
     "Gokulpuri",
     "Johri Enclave",
     "Shiv Vihar"
   ],
+
   "Magenta line": [
     "Janak Puri West",
     "Dabri Mor - Janakpuri South",
