@@ -2,7 +2,11 @@
     import { page } from "$app/stores";
     import LeafletMap from "$lib/LeafletMap.svelte";
     import { delhiMetro } from "$lib/delhimetro.js";
-    import "@m3e/web/all";
+    import { browser } from "$app/environment";
+
+    if (browser) {
+        import("@m3e/web/all");
+    }
 
     import { onMount } from "svelte";
     let id = $page.url.searchParams.get("id");

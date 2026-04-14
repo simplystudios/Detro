@@ -3,7 +3,11 @@
     import { onMount } from "svelte";
 
     import SchematicRouteWeb from "$lib/SchematicRouteWeb.svelte";
-    import "@m3e/web/all";
+    import { browser } from "$app/environment";
+
+    if (browser) {
+        import("@m3e/web/all");
+    }
     import Snackbar, { Actions } from "@smui/snackbar";
     import { Label } from "@smui/button";
     import html2canvas from "html2canvas";

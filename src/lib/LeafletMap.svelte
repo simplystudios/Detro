@@ -2,7 +2,10 @@
     import { onMount, onDestroy } from "svelte";
     import { browser } from "$app/environment";
     import { toValue, fromValue } from "$lib/store.js";
-    import "@m3e/web/all";
+
+    if (browser) {
+        import("@m3e/web/all");
+    }
 
     // schematic_data.js
     export const schematicData = {
@@ -11,22 +14,46 @@
                 id: "Yellow Line",
                 color: "#F5C800",
                 // The exact path the thick colored line takes on the grid
-                path: "M 50 20 L 50 150 L 80 180 L 150 180" 
+                path: "M 50 20 L 50 150 L 80 180 L 150 180",
             },
             {
                 id: "Blue Line",
                 color: "#1565C0",
-                path: "M 20 180 L 200 180"
-            }
+                path: "M 20 180 L 200 180",
+            },
         ],
         stations: [
-            { id: "vishwavidyalaya", name: "Vishwavidyalaya", x: 50, y: 20, isHub: false },
-            { id: "kashmere_gate", name: "Kashmere Gate", x: 50, y: 80, isHub: true },
-            { id: "rajiv_chowk", name: "Rajiv Chowk", x: 50, y: 150, isHub: true },
-            { id: "barakhamba", name: "Barakhamba", x: 80, y: 180, isHub: false }
-        ]
+            {
+                id: "vishwavidyalaya",
+                name: "Vishwavidyalaya",
+                x: 50,
+                y: 20,
+                isHub: false,
+            },
+            {
+                id: "kashmere_gate",
+                name: "Kashmere Gate",
+                x: 50,
+                y: 80,
+                isHub: true,
+            },
+            {
+                id: "rajiv_chowk",
+                name: "Rajiv Chowk",
+                x: 50,
+                y: 150,
+                isHub: true,
+            },
+            {
+                id: "barakhamba",
+                name: "Barakhamba",
+                x: 80,
+                y: 180,
+                isHub: false,
+            },
+        ],
     };
-    
+
     let mapElement;
     let map;
     let leaflet;

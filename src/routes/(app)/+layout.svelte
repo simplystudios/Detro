@@ -1,5 +1,9 @@
 <script>
-    import "@m3e/web/all";
+    import { browser } from "$app/environment";
+
+    if (browser) {
+        import("@m3e/web/all");
+    }
     import { page } from "$app/stores";
 
     let metroLines = {
