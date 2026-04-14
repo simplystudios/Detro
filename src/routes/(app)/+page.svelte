@@ -5,9 +5,6 @@
     import SchematicRouteWeb from "$lib/SchematicRouteWeb.svelte";
     import { browser } from "$app/environment";
 
-    if (browser) {
-        import("@m3e/web/all");
-    }
     import Snackbar, { Actions } from "@smui/snackbar";
     import { Label } from "@smui/button";
     import html2canvas from "html2canvas";
@@ -731,7 +728,22 @@
         to = tmp;
     }
 
+    let isReady = false;
+
     onMount(async () => {
+        if (browser) {
+            // Download the Material 3 library
+            await import("@m3e/web/all");
+
+            // Wait for the browser to explicitly register the parent tag
+            await customElements.whenDefined("m3e-theme");
+
+            // Give the browser 1 frame to paint, then reveal the app
+            requestAnimationFrame(() => {
+                isReady = true;
+            });
+        }
+
         try {
             metrod = await fetch("/stationsdata.json");
             if (!metrod.ok) throw new Error("Failed to fetch station data");
@@ -829,80 +841,82 @@
     };
 </script>
 
-<Snackbar bind:this={snackbarWithoutClose}>
-    <Label style="color:white;">This feature is under development</Label>
-</Snackbar>
+{#if isReady}
+    <Snackbar bind:this={snackbarWithoutClose}>
+        <Label style="color:white;">This feature is under development</Label>
+    </Snackbar>
 
-<div class="app-shell">
-    <!-- ── TOP NAV ── -->
-    <header class="top-bar">
-        <m3e-segmented-button style="width:100%" hide-selection-indicator>
-            <m3e-button-segment
-                style="text-align: center;"
-                checked
-                on:click={() => (activeTab = "planner")}
-                >Planner</m3e-button-segment
-            >
-            <m3e-button-segment
-                style="text-align: center;"
-                on:click={() => (activeTab = "lines")}>Lines</m3e-button-segment
-            >
-            <m3e-button-segment
-                style="text-align: center;"
-                on:click={() => (activeTab = "map")}>Map</m3e-button-segment
-            >
-            <!-- Additional segments omitted for brevity -->
-        </m3e-segmented-button>
-        <div class="logo-mark"></div>
-    </header>
+    <div class="app-shell">
+        <!-- ── TOP NAV ── -->
+        <header class="top-bar">
+            <m3e-segmented-button style="width:100%" hide-selection-indicator>
+                <m3e-button-segment
+                    style="text-align: center;"
+                    checked
+                    on:click={() => (activeTab = "planner")}
+                    >Planner</m3e-button-segment
+                >
+                <m3e-button-segment
+                    style="text-align: center;"
+                    on:click={() => (activeTab = "lines")}
+                    >Lines</m3e-button-segment
+                >
+                <m3e-button-segment
+                    style="text-align: center;"
+                    on:click={() => (activeTab = "map")}>Map</m3e-button-segment
+                >
+                <!-- Additional segments omitted for brevity -->
+            </m3e-segmented-button>
+            <div class="logo-mark"></div>
+        </header>
 
-    <!-- ── MAP TAB ── -->
-    {#if activeTab === "map"}
-        <div class="map-fullscreen">
-            <LeafletMap />
-        </div>
-    {/if}
+        <!-- ── MAP TAB ── -->
+        {#if activeTab === "map"}
+            <div class="map-fullscreen">
+                <LeafletMap />
+            </div>
+        {/if}
 
-    <!-- ── LINES TAB ── -->
-    {#if activeTab === "lines"}
-        <div class="tab-content">
-            <m3e-action-list style="text-align: left;" variant="segmented">
-                {#each Object.entries(metroLines) as [lineName, stations]}
-                    <m3e-expandable-list-item>
-                        {lineName}
+        <!-- ── LINES TAB ── -->
+        {#if activeTab === "lines"}
+            <div class="tab-content">
+                <m3e-action-list style="text-align: left;" variant="segmented">
+                    {#each Object.entries(metroLines) as [lineName, stations]}
+                        <m3e-expandable-list-item>
+                            {lineName}
 
-                        <div slot="items">
-                            {#each stations as station}
-                                <m3e-list-action
-                                    on:click={() =>
-                                        open(`/station?id=${station}`)}
-                                >
-                                    <m3e-icon-button
-                                        variant="tonal"
-                                        slot="leading"
-                                        opticalSize="48"
-                                        name="directions_subway"
+                            <div slot="items">
+                                {#each stations as station}
+                                    <m3e-list-action
+                                        on:click={() =>
+                                            open(`/station?id=${station}`)}
                                     >
-                                        <m3e-icon
+                                        <m3e-icon-button
+                                            variant="tonal"
+                                            slot="leading"
                                             opticalSize="48"
                                             name="directions_subway"
-                                        ></m3e-icon>
-                                    </m3e-icon-button>
+                                        >
+                                            <m3e-icon
+                                                opticalSize="48"
+                                                name="directions_subway"
+                                            ></m3e-icon>
+                                        </m3e-icon-button>
 
-                                    {station}
-                                </m3e-list-action>
-                            {/each}
-                        </div>
-                    </m3e-expandable-list-item>
-                {/each}
-            </m3e-action-list>
-        </div>
-    {/if}
+                                        {station}
+                                    </m3e-list-action>
+                                {/each}
+                            </div>
+                        </m3e-expandable-list-item>
+                    {/each}
+                </m3e-action-list>
+            </div>
+        {/if}
 
-    <!-- ── PLANNER TAB ── -->
-    {#if activeTab === "planner"}
-        <div class="tab-content">
-            <!-- <m3e-card
+        <!-- ── PLANNER TAB ── -->
+        {#if activeTab === "planner"}
+            <div class="tab-content">
+                <!-- <m3e-card
                 variant="filled"
                 style="margin-top:10px; margin-bottom: 10px;"
             >
@@ -914,343 +928,438 @@
                 />
             </m3e-card> -->
 
-            <!-- Search card -->
-            <m3e-card variant="filled">
-                <div slot="content" class="search-inputs">
-                    <m3e-form-field style="width: 100%;">
-                        <label slot="label" for="fromfield">Leaving from</label>
-                        <input
-                            on:input={(e) => (from = e.target.value)}
-                            id="fromfield"
-                        />
-                    </m3e-form-field>
-                    <m3e-autocomplete for="fromfield">
-                        {#each stations as station}
-                            <m3e-option
-                                value={station}
-                                on:click={() => (from = station)}
+                <!-- Search card -->
+                <m3e-card variant="filled">
+                    <div slot="content" class="search-inputs">
+                        <m3e-form-field style="width: 100%;">
+                            <label slot="label" for="fromfield"
+                                >Leaving from</label
                             >
-                                {station}
-                            </m3e-option>
-                        {/each}
-                    </m3e-autocomplete>
+                            <input
+                                on:input={(e) => (from = e.target.value)}
+                                id="fromfield"
+                            />
+                        </m3e-form-field>
+                        <m3e-autocomplete for="fromfield">
+                            {#each stations as station}
+                                <m3e-option
+                                    value={station}
+                                    on:click={() => (from = station)}
+                                >
+                                    {station}
+                                </m3e-option>
+                            {/each}
+                        </m3e-autocomplete>
 
-                    <m3e-form-field style="width: 100%;">
-                        <label slot="label" for="tofield">Heading to</label>
-                        <input
-                            on:input={(e) => (to = e.target.value)}
-                            id="tofield"
-                        />
-                    </m3e-form-field>
-                    <m3e-autocomplete for="tofield">
-                        {#each stations as station}
-                            <m3e-option
-                                value={station}
-                                on:click={() => (to = station)}
-                            >
-                                {station}
-                            </m3e-option>
-                        {/each}
-                    </m3e-autocomplete>
+                        <m3e-form-field style="width: 100%;">
+                            <label slot="label" for="tofield">Heading to</label>
+                            <input
+                                on:input={(e) => (to = e.target.value)}
+                                id="tofield"
+                            />
+                        </m3e-form-field>
+                        <m3e-autocomplete for="tofield">
+                            {#each stations as station}
+                                <m3e-option
+                                    value={station}
+                                    on:click={() => (to = station)}
+                                >
+                                    {station}
+                                </m3e-option>
+                            {/each}
+                        </m3e-autocomplete>
 
-                    <m3e-icon-button
-                        class="swap-btn"
-                        on:click={swapStations}
-                        aria-label="Swap stations"
+                        <m3e-icon-button
+                            class="swap-btn"
+                            on:click={swapStations}
+                            aria-label="Swap stations"
+                            variant="elevated"
+                        >
+                            <m3e-icon name="swap_vertical" />
+                        </m3e-icon-button>
+                    </div>
+                    <div slot="actions" end>
+                        <m3e-button
+                            style="width: 100%;"
+                            on:click={() => distancebwstations()}
+                            variant="filled">Search Route</m3e-button
+                        >
+                    </div>
+                </m3e-card>
+                <br />
+                <div class="quick-chips-row">
+                    <m3e-assist-chip
+                        on:click={() => (to = "Shaheed Sthal (New Bus Adda)")}
+                    >
+                        <m3e-icon slot="icon" name="home"></m3e-icon>
+                        Home
+                    </m3e-assist-chip>
+
+                    <m3e-assist-chip on:click={() => (to = "Vishwavidyalaya")}>
+                        <m3e-icon slot="icon" name="school"></m3e-icon>
+                        School
+                    </m3e-assist-chip>
+
+                    <m3e-assist-chip on:click={() => (to = "Rajiv Chowk")}>
+                        <m3e-icon slot="icon" name="history"></m3e-icon>
+                        Rajiv Chowk
+                    </m3e-assist-chip>
+                    <m3e-assist-chip
                         variant="elevated"
+                        on:click={() => (to = "Shaheed Sthal (New Bus Adda)")}
                     >
-                        <m3e-icon name="swap_vertical" />
-                    </m3e-icon-button>
+                        <m3e-icon slot="icon" name="edit"></m3e-icon>
+                        Edit
+                    </m3e-assist-chip>
                 </div>
-                <div slot="actions" end>
-                    <m3e-button
-                        style="width: 100%;"
-                        on:click={() => distancebwstations()}
-                        variant="filled">Search Route</m3e-button
-                    >
-                </div>
-            </m3e-card>
-            <br />
-            <div class="quick-chips-row">
-                <m3e-assist-chip
-                    on:click={() => (to = "Shaheed Sthal (New Bus Adda)")}
-                >
-                    <m3e-icon slot="icon" name="home"></m3e-icon>
-                    Home
-                </m3e-assist-chip>
 
-                <m3e-assist-chip on:click={() => (to = "Vishwavidyalaya")}>
-                    <m3e-icon slot="icon" name="school"></m3e-icon>
-                    School
-                </m3e-assist-chip>
-
-                <m3e-assist-chip on:click={() => (to = "Rajiv Chowk")}>
-                    <m3e-icon slot="icon" name="history"></m3e-icon>
-                    Rajiv Chowk
-                </m3e-assist-chip>
-                <m3e-assist-chip
-                    variant="elevated"
-                    on:click={() => (to = "Shaheed Sthal (New Bus Adda)")}
-                >
-                    <m3e-icon slot="icon" name="edit"></m3e-icon>
-                    Edit
-                </m3e-assist-chip>
-            </div>
-
-            <!-- Nearest station -->
-            {#if ifstationfound}
-                <div class="section-eyebrow" style="margin-top:28px;">
-                    NEAREST STATION
-                </div>
-                <!-- <div class="nearest-card">
+                <!-- Nearest station -->
+                {#if ifstationfound}
+                    <div class="section-eyebrow" style="margin-top:28px;">
+                        NEAREST STATION
+                    </div>
+                    <!-- <div class="nearest-card">
 
                     </div>
                 </div> -->
-                <m3e-card variant="outlined">
-                    <div class="nearest-body">
-                        <div>
-                            <m3e-typography variant="subtitle1">
-                                {nearestStation.stop_name}
-                            </m3e-typography>
-                            <div class="nearest-dist">
-                                ~ {(minDistance * 1000).toFixed(0)}m away
+                    <m3e-card variant="outlined">
+                        <div class="nearest-body">
+                            <div>
+                                <m3e-typography variant="subtitle1">
+                                    {nearestStation.stop_name}
+                                </m3e-typography>
+                                <div class="nearest-dist">
+                                    ~ {(minDistance * 1000).toFixed(0)}m away
+                                </div>
+                            </div>
+                            <div class="nearest-actions">
+                                <m3e-button
+                                    variant="tonal"
+                                    on:click={googlemapslink}
+                                >
+                                    <m3e-icon name="map_marker"></m3e-icon>
+                                    Directions
+                                </m3e-button>
+                                <m3e-button
+                                    variant="outlined"
+                                    on:click={openuberlink}
+                                >
+                                    <m3e-icon name="local_taxi"></m3e-icon>
+                                    Uber
+                                </m3e-button>
                             </div>
                         </div>
-                        <div class="nearest-actions">
-                            <m3e-button
-                                variant="tonal"
-                                on:click={googlemapslink}
-                            >
-                                <m3e-icon name="map_marker"></m3e-icon>
-                                Directions
-                            </m3e-button>
-                            <m3e-button
-                                variant="outlined"
-                                on:click={openuberlink}
-                            >
-                                <m3e-icon name="local_taxi"></m3e-icon>
-                                Uber
-                            </m3e-button>
-                        </div>
-                    </div>
-                    <div class="nearest-meta">
-                        <div class="meta-chip">
-                            <div slot="content">LINE</div>
-                            <span class="chip-val">{nearestStation.Line}</span>
-                        </div>
-                        <div class="meta-chip">
-                            <span class="chip-label">LAYOUT</span>
-                            <span class="chip-val"
-                                >{nearestStation.stop_layout}</span
-                            >
-                        </div>
-                    </div></m3e-card
-                >
-            {:else}
-                <!-- <div class="no-location">
+                        <div class="nearest-meta">
+                            <div class="meta-chip">
+                                <div slot="content">LINE</div>
+                                <span class="chip-val"
+                                    >{nearestStation.Line}</span
+                                >
+                            </div>
+                            <div class="meta-chip">
+                                <span class="chip-label">LAYOUT</span>
+                                <span class="chip-val"
+                                    >{nearestStation.stop_layout}</span
+                                >
+                            </div>
+                        </div></m3e-card
+                    >
+                {:else}
+                    <!-- <div class="no-location">
                     <img width="120" height="120" src="/noloc.svg" alt="" />
                     <p>Location access required</p>
                 </div> -->
-            {/if}
+                {/if}
 
-            <!-- Route result -->
-            {#if routeFound && frome && toe !== "undefined"}
-                <!-- Schematic -->
-                <br />
-                <m3e-card
-                    style="max-width: 100%; height: 200px;"
-                    variant="outlined"
-                >
-                    <SchematicRouteWeb route={rawroute} />
-                </m3e-card>
+                <!-- Route result -->
+                {#if routeFound && frome && toe !== "undefined"}
+                    <!-- Schematic -->
+                    <br />
+                    <m3e-card
+                        style="max-width: 100%; height: 200px;"
+                        variant="outlined"
+                    >
+                        <SchematicRouteWeb route={rawroute} />
+                    </m3e-card>
 
-                <!-- Summary stats card -->
-                <m3e-card variant="outlined" class="stats-card" id="capture">
-                    <div class="stats-endpoints">
-                        <div class="endpoint from-ep">
-                            <div
-                                class="ep-dot"
-                                style={ballstationcssfrom}
-                            ></div>
-                            <div>
-                                <div class="ep-name">{from}</div>
-                                <div class="ep-line">{linefrom}</div>
-                            </div>
-                        </div>
-                        <div class="endpoint-arrow">
-                            <svg
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                ><path d="M5 12h14M12 5l7 7-7 7" /></svg
-                            >
-                        </div>
-                        <div class="endpoint to-ep">
-                            <div class="ep-dot" style={ballstationcssto}></div>
-                            <div>
-                                <div class="ep-name">{to}</div>
-                                <div class="ep-line">{lineto}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="stats-row">
-                        <div class="stat-item">
-                            <svg
-                                width="22"
-                                height="22"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                ><circle cx="12" cy="12" r="3" /><line
-                                    x1="12"
-                                    y1="2"
-                                    x2="12"
-                                    y2="6"
-                                /><line x1="12" y1="18" x2="12" y2="22" /><line
-                                    x1="2"
-                                    y1="12"
-                                    x2="6"
-                                    y2="12"
-                                /><line x1="18" y1="12" x2="22" y2="12" /></svg
-                            >
-                            <span class="stat-val">{route.length}</span>
-                            <span class="stat-label">Stations</span>
-                        </div>
-                        <div class="stat-divider"></div>
-                        <div class="stat-item">
-                            <svg
-                                width="22"
-                                height="22"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                ><path
-                                    d="M17 3l4 4-4 4M7 21l-4-4 4-4M21 7H3M3 17h18"
-                                /></svg
-                            >
-                            <span class="stat-val">{transferCount}</span>
-                            <span class="stat-label">Transfers</span>
-                        </div>
-                        <div class="stat-divider"></div>
-                        <div class="stat-item">
-                            <svg
-                                width="22"
-                                height="22"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                ><circle cx="12" cy="12" r="10" /><path
-                                    d="M12 6v6l4 2"
-                                /></svg
-                            >
-                            <span class="stat-val">{distance}</span>
-                            <span class="stat-label">Distance</span>
-                        </div>
-                    </div>
-                </m3e-card>
-
-                <!-- Stations list -->
-                <div class="section-eyebrow" style="margin-top:28px;">
-                    STATIONS LIST
-                </div>
-                <m3e-card variant="outlined" class="stations-list">
-                    {#each route as st, idx}
-                        <div
-                            class="station-row"
-                            class:is-transfer={st.isTransfer}
-                        >
-                            <div class="station-timeline">
+                    <!-- Summary stats card -->
+                    <m3e-card
+                        variant="outlined"
+                        class="stats-card"
+                        id="capture"
+                    >
+                        <div class="stats-endpoints">
+                            <div class="endpoint from-ep">
                                 <div
-                                    class="tl-dot"
-                                    class:tl-first={idx === 0}
-                                    class:tl-last={idx === route.length - 1}
-                                    class:tl-transfer={st.isTransfer}
+                                    class="ep-dot"
+                                    style={ballstationcssfrom}
                                 ></div>
-                                {#if idx !== route.length - 1}
-                                    <div
-                                        class="tl-line"
-                                        class:tl-line-blue={route[idx + 1]
-                                            ?.isTransfer}
-                                    ></div>
-                                {/if}
+                                <div>
+                                    <div class="ep-name">{from}</div>
+                                    <div class="ep-line">{linefrom}</div>
+                                </div>
                             </div>
-                            <div class="station-info">
-                                <span class="station-row-name"
-                                    >{st.station}</span
+                            <div class="endpoint-arrow">
+                                <svg
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    ><path d="M5 12h14M12 5l7 7-7 7" /></svg
                                 >
-                                {#if st.isTransfer}
-                                    <span class="transfer-tag"
-                                        >↔ Change to {st.line}</span
-                                    >
-                                {/if}
+                            </div>
+                            <div class="endpoint to-ep">
+                                <div
+                                    class="ep-dot"
+                                    style={ballstationcssto}
+                                ></div>
+                                <div>
+                                    <div class="ep-name">{to}</div>
+                                    <div class="ep-line">{lineto}</div>
+                                </div>
                             </div>
                         </div>
-                    {/each}
-                </m3e-card>
 
-                <button class="screenshot-btn" on:click={saveScreenshot}>
-                    <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        ><path
-                            d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
-                        /><circle cx="12" cy="13" r="4" /></svg
-                    >
-                    Save Route Screenshot
-                </button>
-            {/if}
+                        <div class="stats-row">
+                            <div class="stat-item">
+                                <svg
+                                    width="22"
+                                    height="22"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    ><circle cx="12" cy="12" r="3" /><line
+                                        x1="12"
+                                        y1="2"
+                                        x2="12"
+                                        y2="6"
+                                    /><line
+                                        x1="12"
+                                        y1="18"
+                                        x2="12"
+                                        y2="22"
+                                    /><line
+                                        x1="2"
+                                        y1="12"
+                                        x2="6"
+                                        y2="12"
+                                    /><line
+                                        x1="18"
+                                        y1="12"
+                                        x2="22"
+                                        y2="12"
+                                    /></svg
+                                >
+                                <span class="stat-val">{route.length}</span>
+                                <span class="stat-label">Stations</span>
+                            </div>
+                            <div class="stat-divider"></div>
+                            <div class="stat-item">
+                                <svg
+                                    width="22"
+                                    height="22"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    ><path
+                                        d="M17 3l4 4-4 4M7 21l-4-4 4-4M21 7H3M3 17h18"
+                                    /></svg
+                                >
+                                <span class="stat-val">{transferCount}</span>
+                                <span class="stat-label">Transfers</span>
+                            </div>
+                            <div class="stat-divider"></div>
+                            <div class="stat-item">
+                                <svg
+                                    width="22"
+                                    height="22"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    ><circle cx="12" cy="12" r="10" /><path
+                                        d="M12 6v6l4 2"
+                                    /></svg
+                                >
+                                <span class="stat-val">{distance}</span>
+                                <span class="stat-label">Distance</span>
+                            </div>
+                        </div>
+                    </m3e-card>
 
-            {#if routeFound === false && from && to}
-                <div class="no-route-msg">
-                    <svg
-                        width="40"
-                        height="40"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#555"
-                        stroke-width="1.5"
-                        ><circle cx="12" cy="12" r="10" /><line
-                            x1="12"
-                            y1="8"
-                            x2="12"
-                            y2="12"
-                        /><line x1="12" y1="16" x2="12.01" y2="16" /></svg
-                    >
-                    <p>Couldn't find a route between these stations.</p>
-                </div>
-            {/if}
+                    <!-- Stations list -->
+                    <div class="section-eyebrow" style="margin-top:28px;">
+                        STATIONS LIST
+                    </div>
+                    <m3e-card variant="outlined" class="stations-list">
+                        {#each route as st, idx}
+                            <div
+                                class="station-row"
+                                class:is-transfer={st.isTransfer}
+                            >
+                                <div class="station-timeline">
+                                    <div
+                                        class="tl-dot"
+                                        class:tl-first={idx === 0}
+                                        class:tl-last={idx === route.length - 1}
+                                        class:tl-transfer={st.isTransfer}
+                                    ></div>
+                                    {#if idx !== route.length - 1}
+                                        <div
+                                            class="tl-line"
+                                            class:tl-line-blue={route[idx + 1]
+                                                ?.isTransfer}
+                                        ></div>
+                                    {/if}
+                                </div>
+                                <div class="station-info">
+                                    <span class="station-row-name"
+                                        >{st.station}</span
+                                    >
+                                    {#if st.isTransfer}
+                                        <span class="transfer-tag"
+                                            >↔ Change to {st.line}</span
+                                        >
+                                    {/if}
+                                </div>
+                            </div>
+                        {/each}
+                    </m3e-card>
+
+                    <button class="screenshot-btn" on:click={saveScreenshot}>
+                        <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            ><path
+                                d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
+                            /><circle cx="12" cy="13" r="4" /></svg
+                        >
+                        Save Route Screenshot
+                    </button>
+                {/if}
+
+                {#if routeFound === false && from && to}
+                    <div class="no-route-msg">
+                        <svg
+                            width="40"
+                            height="40"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="#555"
+                            stroke-width="1.5"
+                            ><circle cx="12" cy="12" r="10" /><line
+                                x1="12"
+                                y1="8"
+                                x2="12"
+                                y2="12"
+                            /><line x1="12" y1="16" x2="12.01" y2="16" /></svg
+                        >
+                        <p>Couldn't find a route between these stations.</p>
+                    </div>
+                {/if}
+            </div>
+        {/if}
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>
+                Powered by <a href="https://openmaptiles.org/" target="_blank"
+                    >OpenMapTiles</a
+                >
+                ·
+                <a
+                    href="https://otd.delhi.gov.in/data/staticDMRC/"
+                    target="_blank">Open Transit Data Delhi</a
+                >
+            </p>
+            <p class="disclaimer">
+                * Detro is not affiliated with DMRC or Delhi Government.
+            </p>
+        </footer>
+    </div>
+{:else}
+    <div class="startup-screen">
+        <div class="minimal-loader">
+            <img
+                src="/detroname.png"
+                alt="DetroGo"
+                width="150px"
+                class="loader-icon"
+            />
         </div>
-    {/if}
-
-    <!-- Footer -->
-    <footer class="app-footer">
-        <p>
-            Powered by <a href="https://openmaptiles.org/" target="_blank"
-                >OpenMapTiles</a
-            >
-            ·
-            <a href="https://otd.delhi.gov.in/data/staticDMRC/" target="_blank"
-                >Open Transit Data Delhi</a
-            >
-        </p>
-        <p class="disclaimer">
-            * Detro is not affiliated with DMRC or Delhi Government.
-        </p>
-    </footer>
-</div>
+        <p>Loading</p>
+    </div>
+{/if}
 
 <style>
+    /* Add this to your <style> block */
+    .startup-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: var(--md-sys-color-background, #131316);
+        color: var(--md-sys-color-on-background, #e8e8ea);
+        z-index: 99999;
+    }
+
+    /* Container handles the steady 360-degree rotation */
+    /* 1. The main shape-shifting container */
+    /* Container to perfectly center the icon and ring together */
+    .minimal-loader {
+        position: relative;
+        width: 72px;
+        height: 72px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    /* The anchored subway icon in the middle */
+    .loader-icon {
+        font-size: 36px;
+        color: #bf2c30; /* Your brand red */
+        z-index: 2;
+    }
+
+    /* The smooth spinning track */
+    .loader-ring {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        /* Creates a subtle background track */
+        border: 3px solid rgba(191, 44, 48, 0.15);
+        /* The solid piece that spins */
+        border-top-color: #bf2c30;
+        border-radius: 50%;
+
+        /* A custom cubic-bezier makes the spin feel modern and fluid rather than robotic */
+        animation: minimal-spin 1s cubic-bezier(0.6, 0.1, 0.4, 0.9) infinite;
+    }
+
+    @keyframes minimal-spin {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
+    }
     /* ── RESET & TOKENS ── */
     :global(body) {
         margin: 0;
